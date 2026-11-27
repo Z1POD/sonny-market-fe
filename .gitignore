@@ -1,7 +1,6 @@
 # .gitignore
 
 node_modules
-package-lock.json
 yarn.lock
 
 .DS_Store
@@ -22,6 +21,7 @@ yarn.lock
 /blob-report/
 /playwright/.cache/
 .tanstack
+*.py
 
 map_project.py
 /scripts
