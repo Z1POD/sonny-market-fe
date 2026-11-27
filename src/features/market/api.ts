@@ -122,6 +122,8 @@ export interface ProductDetail {
   /** Slug of the blank this design is printed on. */
   blank_slug: string;
   allows_customization_on_top: boolean;
+  is_limited_edition: boolean;
+  edition_size: number | null;
 }
 
 /**

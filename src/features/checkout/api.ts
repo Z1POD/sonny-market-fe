@@ -19,6 +19,8 @@ interface RawDeliveryOption {
   currency_code: string;
   min_days: number;
   max_days: number;
+  /** Cash-on-delivery allowed: the buyer may pay the courier directly. */
+  cod_available?: boolean;
 }
 
 interface RawPickupLocation {
@@ -72,6 +74,7 @@ export function mapDestination(d: RawDestination): { city: City; options: Shippi
       currency: o.currency_code,
       estimatedDays: days(o),
       isFree: parseFloat(o.base_fee) === 0,
+      codAvailable: o.cod_available === true,
     }));
   const pickupOpt = d.delivery_options.filter((o) => o.kind === "pickup");
   const pickup: PickupLocation[] = pickupOpt.length
@@ -100,10 +103,15 @@ export function mapDestination(d: RawDestination): { city: City; options: Shippi
 export interface CheckoutBody {
   schema_version: "1.0";
   currency_id?: string;
-  items: { design_id: string; variant_id: string; quantity: number }[];
+  items: { design_id: string; variant_id: string | null; print_method_id?: string | null; quantity: number }[];
   contact: { full_name: string; phone: string; email?: string };
-  delivery_option_id: string;
-  pickup_location_id?: string;
+  delivery_option_id: string | null;
+  pickup_location_id?: string | null;
+  shipping_address_id?: string | null;
+  /** Optional promo code; the validate response reports its status. */
+  coupon_code?: string;
+  /** "prepaid" (default: the platform collects delivery with the order) or "cod" (pay the courier). */
+  delivery_fee_mode?: "prepaid" | "cod";
   shipping_address?: {
     full_name: string;
     phone: string;
@@ -121,20 +129,16 @@ interface RawValidate {
   currency_code: string;
   subtotal_amount: string;
   tax_amount: string;
+  /** Admin-configurable platform fee (percent of subtotal − discount). */
+  platform_fee_amount?: string;
   shipping_amount: string;
+  delivery_fee_mode?: "prepaid" | "cod";
+  /** With cod: what the buyer pays the courier (excluded from total_amount). */
+  delivery_fee_due?: string;
   discount_amount: string;
   total_amount: string;
-  items: {
-    design_id: string;
-    variant_id: string;
-    quantity: number;
-    price_breakdown: {
-      currency_symbol: string;
-      currency_decimal_places: number;
-      unit_price: string;
-      line_total: string;
-    };
-  }[];
+  items: { design_id: string; variant_id: string | null; unit_price: string; quantity: number; line_total: string }[];
+  coupon?: { code: string; discount: string; status: string } | null;
 }
 
 interface RawOrderCreated {
@@ -156,22 +160,26 @@ export const checkoutApi = {
     return d ? mapDestination(d).options : { delivery: [], pickup: [] };
   },
 
-  validate: async (body: CheckoutBody): Promise<CheckoutQuote> => {
+  /** The response only carries `currency_code`; symbol/decimals come from the caller's hint. */
+  validate: async (body: CheckoutBody, hint?: { symbol?: string; decimal_places?: number }): Promise<CheckoutQuote> => {
     const r = await api.post<RawValidate>("/orders/checkout/validate/", { body });
-    const pb = r.items[0]?.price_breakdown;
     return {
-      currency: { code: r.currency_code, symbol: pb?.currency_symbol ?? r.currency_code, decimal_places: pb?.currency_decimal_places ?? 2 },
+      currency: { code: r.currency_code, symbol: hint?.symbol || r.currency_code, decimal_places: hint?.decimal_places ?? 2 },
       subtotal: r.subtotal_amount,
       shipping: r.shipping_amount,
       tax: r.tax_amount,
+      platformFee: r.platform_fee_amount ?? "0.00",
+      deliveryFeeMode: r.delivery_fee_mode ?? "prepaid",
+      deliveryFeeDue: r.delivery_fee_due ?? "0.00",
       discount: r.discount_amount,
       total: r.total_amount,
+      coupon: r.coupon ? { code: r.coupon.code, discount: r.coupon.discount, status: r.coupon.status } : null,
       lines: r.items.map((i) => ({
         designId: i.design_id,
-        variantId: i.variant_id,
+        variantId: i.variant_id ?? "",
         quantity: i.quantity,
-        unitPrice: i.price_breakdown.unit_price,
-        lineTotal: i.price_breakdown.line_total,
+        unitPrice: i.unit_price,
+        lineTotal: i.line_total,
       })),
     };
   },

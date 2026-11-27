@@ -2,11 +2,11 @@
  * src/features/orders/components/OrdersPage.tsx
  *
  * Lists all orders for the logged-in user. Filter by status via tabs.
- * Tap a card to open OrderDetailSheet.
+ * Tap a card to open the order page (/order/$orderId).
  */
 
-import { useEffect, useState } from "react";
-import { useSearch } from "@tanstack/react-router";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ordersInfiniteQuery } from "../queries";
 import { ORDER_STATUS_LABEL, type OrderListItem, type OrderStatus } from "../api";
-import { OrderDetailSheet } from "./OrderDetailSheet";
 import { BrandLoader } from "@/components/ui/loader";
 
 //     Status helpers                                                             
@@ -29,7 +28,8 @@ const STATUS_TABS: { label: string; value: string }[] = [
   { label: "All", value: "" },
   { label: "Pending payment", value: "pending_payment" },
   { label: "Paid", value: "paid_verifying" },
-  { label: "In production", value: "in_production" },
+  { label: "With printer", value: "sent_to_printer" },
+  { label: "In transit", value: "in_transit" },
   { label: "Delivered", value: "delivered" },
   { label: "Cancelled", value: "cancelled" },
 ];
@@ -41,9 +41,12 @@ function statusIcon(status: OrderStatus) {
     case "paid_verifying": return <LoaderIcon className="h-3.5 w-3.5" />;
     case "sent_to_printer": return <CheckCheck className="h-3.5 w-3.5" />;
     case "in_production": return <Loader2 className="h-3.5 w-3.5 animate-spin" />;
+    case "in_transit":
     case "handed_over": return <Truck className="h-3.5 w-3.5" />;
+    case "completed":
     case "delivered": return <CheckCircle2 className="h-3.5 w-3.5" />;
     case "cancelled":
+    case "expired":
     case "payment_failed":
     case "refunded": return <XCircle className="h-3.5 w-3.5" />;
     default: return <Package className="h-3.5 w-3.5" />;
@@ -52,6 +55,7 @@ function statusIcon(status: OrderStatus) {
 
 function statusVariant(status: OrderStatus): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
+    case "completed":
     case "delivered": return "default";
     case "cancelled":
     case "payment_failed":
@@ -155,9 +159,7 @@ function EmptyOrders({ filtered }: { filtered: boolean }) {
 export function OrdersPage() {
   const [activeTab, setActiveTab] = useState("");
   // `?order=<id>` (from notifications / profile) opens that order directly.
-  const { order: orderParam } = useSearch({ strict: false }) as { order?: string };
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(orderParam ?? null);
-  useEffect(() => { if (orderParam) setSelectedOrderId(orderParam); }, [orderParam]);
+  const navigate = useNavigate();
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
     useInfiniteQuery(
@@ -210,7 +212,7 @@ export function OrdersPage() {
                 <OrderCard
                   key={order.id}
                   order={order}
-                  onClick={() => setSelectedOrderId(order.id)}
+                  onClick={() => navigate({ to: "/order/$orderId", params: { orderId: order.id } })}
                 />
               ))}
             </div>
@@ -239,11 +241,6 @@ export function OrdersPage() {
         )}
       </div>
 
-      {/* Detail sheet */}
-      <OrderDetailSheet
-        orderId={selectedOrderId}
-        onClose={() => setSelectedOrderId(null)}
-      />
     </div>
   );
 }

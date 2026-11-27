@@ -1,19 +1,25 @@
 // src/components/layout/UserMenu.tsx
 "use client";
 
+import { UserAvatar } from "@/shared/components/UserAvatar";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart3, LogOut, ShoppingBag } from "lucide-react";
+import { Bell, LogOut, Receipt, Store as StoreIcon, User as UserIcon } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store";
 import { useTelegram } from "@/shared/hooks/use-telegram";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
-const ACCOUNT_NAV = [{ to: "/analytics", label: "Analytics", icon: BarChart3 }] as const;
+// Always shown, for every signed-in user.
+const ACCOUNT_NAV = [
+  { to: "/profile", label: "Profile", icon: UserIcon },
+  { to: "/orders", label: "Orders", icon: Receipt },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+] as const;
 
-// Link to the separate buyer/marketplace app (optional — set VITE_BUYER_APP_URL).
-const BUYER_APP_URL = (import.meta.env.VITE_BUYER_APP_URL as string | undefined) || "";
+// Link to the separate creator/designer app (optional — set VITE_CREATOR_APP_URL).
+const CREATOR_APP_URL = (import.meta.env.VITE_CREATOR_APP_URL as string | undefined) || "";
 
 interface UserMenuProps {
   anchor?: "header" | "tab";
@@ -41,7 +47,8 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
 
   const handleTrigger = () => {
     if (!user) {
-      navigate({ to: "/login", search: { redirect: undefined } });
+      // Guests: go to sign-in and come back to where they were.
+      navigate({ to: "/login", search: { redirect: window.location.pathname + window.location.search } });
       return;
     }
     setOpen((v) => !v);
@@ -81,13 +88,16 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
             )}
           >
           <div className="flex items-start justify-between border-b border-border/40 px-4 py-3">
-            <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <UserAvatar user={user} className="h-8 w-8 text-[11px]" />
+              <div className="min-w-0">
                 <p className="truncate text-sm font-medium leading-tight">
                 {user.display_name ?? "—"}
                 </p>
                 {/* <p className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                 {user.role ?? "guest"}
                 </p> */}
+              </div>
             </div>
 
             <ThemeToggle className="bg-muted/60" />
@@ -107,17 +117,17 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
                 </Link>
               ))}
             </div>
-            {BUYER_APP_URL && (
+            {CREATOR_APP_URL && (
               <a
-                href={BUYER_APP_URL}
+                href={CREATOR_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 role="menuitem"
                 onClick={() => setOpen(false)}
                 className="flex w-full items-center gap-2.5 border-b border-border/40 px-4 py-2.5 text-sm text-primary transition hover:bg-surface-overlay"
               >
-                <ShoppingBag className="h-3.5 w-3.5" />
-                Open the marketplace
+                <StoreIcon className="h-3.5 w-3.5" />
+                Start selling your designs
               </a>
             )}
 

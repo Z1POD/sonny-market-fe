@@ -16,7 +16,8 @@ import type { OrderDetail } from "../api";
 import { useConfirm } from "@/shared/components/ConfirmModal";
 import { BrandLoader } from "@/components/ui/loader";
 
-import { PaymentPanel } from "@/features/payment/components/PaymentPanel";
+import { PaymentSheet } from "@/features/payment/components/PaymentSheet";
+import { EscrowPanel } from "@/features/escrow/EscrowPanel";
 import { ORDER_STATUS_LABEL } from "../api";
 
 //     Status helpers                                                             
@@ -28,9 +29,12 @@ function statusColor(status: string) {
     case "paid_verifying":
     case "sent_to_printer":
     case "in_production":
+    case "in_transit":
     case "handed_over": return "text-emerald-500";
+    case "completed":
     case "delivered": return "text-blue-300";
     case "cancelled":
+    case "expired":
     case "payment_failed":
     case "refunded":
     case "disputed": return "text-destructive";
@@ -214,6 +218,8 @@ function OrderDetailContent({
   onPaymentVerified: () => void;
 }) {
   const sym = order.pricing.currency.symbol + " ";
+  const [payOpen, setPayOpen] = useState(false);
+  const showEscrow = ["sent_to_printer", "in_production", "handed_over", "in_transit", "delivered", "completed", "disputed", "refunded"].includes(order.status);
   const needsPayment = order.status === "pending_payment" || order.status === "payment_failed";
   const settling = order.status === "payment_processing" || order.status === "paid_verifying";
 
@@ -250,7 +256,12 @@ function OrderDetailContent({
               {order.status === "payment_failed" ? "Payment failed — try again" : "Payment required"}
             </p>
           </div>
-          <PaymentPanel
+          <Button className="h-12 w-full rounded-2xl bg-gold text-sm font-semibold text-gold-foreground" onClick={() => setPayOpen(true)}>
+            Pay {sym}{order.pricing.total}
+          </Button>
+          <PaymentSheet
+            open={payOpen}
+            onOpenChange={setPayOpen}
             orderId={order.id}
             orderNumber={order.order_number}
             amountLabel={`${sym}${order.pricing.total}`}
@@ -265,6 +276,8 @@ function OrderDetailContent({
           <p className="text-sm">Confirming your payment — this updates automatically.</p>
         </div>
       )}
+
+      {showEscrow && <EscrowPanel orderId={order.id} money={(v) => `${sym}${v}`} />}
 
       {/* Section tabs */}
       <div className="flex gap-1">
@@ -319,6 +332,10 @@ function OrderDetailContent({
               { label: "Shipping", value: `${sym}${order.pricing.shipping_cost}` },
               ...(parseFloat(order.pricing.discount) > 0
                 ? [{ label: "Discount", value: `-${sym}${order.pricing.discount}` }]
+                : []),
+              ...(parseFloat(order.pricing.tax) > 0 ? [{ label: "Tax", value: `${sym}${order.pricing.tax}` }] : []),
+              ...(parseFloat(order.pricing.platform_fee) > 0
+                ? [{ label: "Platform fee", value: `${sym}${order.pricing.platform_fee}` }]
                 : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">

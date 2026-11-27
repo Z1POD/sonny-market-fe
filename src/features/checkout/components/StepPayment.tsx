@@ -3,16 +3,16 @@
 // Final checkout step. The order already exists (`pending_payment`); the shared PaymentPanel runs
 // method → reference → receipt → verify. If the buyer leaves, the order stays payable from My Orders.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/shared/components/ConfirmModal";
 import { appToast as toast } from "@/lib/toaster";
 import { formatPrice } from "@/lib/format";
-import { PaymentPanel } from "@/features/payment/components/PaymentPanel";
+import { PaymentSheet } from "@/features/payment/components/PaymentSheet";
 import { ordersApi } from "@/features/orders/api";
 import { orderKeys } from "@/features/orders/queries";
 import { useCheckoutStore } from "../store";
@@ -24,32 +24,38 @@ export function StepPayment() {
   const qc = useQueryClient();
   const [confirm, confirmModal] = useConfirm();
   const [paid, setPaid] = useState(false); // verified or accepted for manual review
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const orderId = order?.id;
+  // Open the payment sheet as soon as the order exists; it can be reopened with "Pay now".
+  useEffect(() => { if (orderId) setSheetOpen(true); }, [orderId]);
 
   const cancel = useMutation({
     mutationFn: (reason: string) => ordersApi.cancel(order!.id, reason),
     onSuccess: () => {
       toast.success("Order cancelled");
       qc.invalidateQueries({ queryKey: orderKeys.all });
+      setSheetOpen(false);
       reset();
+      navigate({ to: "/orders" });
     },
     onError: (e: Error) => toast.error(e.message || "Could not cancel this order"),
   });
 
   if (!order) return null;
 
-  const onDone = () => {
-    setPaid(true);
-    qc.invalidateQueries({ queryKey: orderKeys.all });
-  };
+  // Only mark paid once the buyer dismisses the result: re-rendering the page mid-result is what made the sheet jump.
+  const onDone = () => {};
 
   const handleCancel = async () => {
-    const ok = await confirm({
+    const { confirmed, value } = await confirm({
       title: "Cancel this order?",
       description: "This cannot be undone.",
       confirmLabel: "Cancel order",
+      cancelLabel: "Keep order",
       danger: true,
+      input: { label: "Why are you cancelling?", placeholder: "Tell us the reason", required: true },
     });
-    if (ok) cancel.mutate("Cancelled from checkout");
+    if (confirmed) cancel.mutate(value);
   };
 
   const goOrders = () => {
@@ -66,12 +72,17 @@ export function StepPayment() {
         className="flex h-full flex-col"
       >
         <div className="flex-1 space-y-4 overflow-y-auto pb-6 no-scrollbar">
-          <PaymentPanel
-            orderId={order.id}
-            orderNumber={order.orderNumber}
-            amountLabel={formatPrice(order.total, order.currency)}
-            onDone={onDone}
-          />
+          <div className="rounded-2xl border border-border bg-surface p-5 text-center">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Amount due</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight">{formatPrice(order.total, order.currency)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Order {order.orderNumber}</p>
+          </div>
+          {!paid && (
+            <Button className="h-12 w-full rounded-2xl bg-gold text-sm font-semibold text-gold-foreground" onClick={() => setSheetOpen(true)}>
+              <CreditCard className="mr-2 h-4 w-4" /> Pay now
+            </Button>
+          )}
+          {paid && <p role="status" className="text-center text-sm text-muted-foreground">Payment received for order {order.orderNumber}.</p>}
 
           {paid ? (
             <div className="space-y-2">
@@ -98,6 +109,19 @@ export function StepPayment() {
           )}
         </div>
       </motion.div>
+      <PaymentSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        orderId={order.id}
+        orderNumber={order.orderNumber}
+        amountLabel={formatPrice(order.total, order.currency)}
+        onDone={onDone}
+        onFinished={() => { setPaid(true); qc.invalidateQueries({ queryKey: orderKeys.all }); reset(); navigate({ to: "/order/$orderId", params: { orderId: order.id } }); }}
+        failureActions={[
+          { label: "Pay later", variant: "secondary", onClick: () => { setSheetOpen(false); goOrders(); } },
+          { label: "Cancel order", variant: "danger", onClick: () => { void handleCancel(); } },
+        ]}
+      />
       {confirmModal}
     </>
   );

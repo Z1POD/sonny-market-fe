@@ -20,6 +20,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { appToast as toast } from "@/lib/toaster";
 import { ApiError } from "@/shared/api/client";
+import { useCheckoutStore } from "@/features/checkout/store";
+import { useAuthStore } from "@/features/auth/store";
 import { useTelegram } from "@/shared/hooks/use-telegram";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +31,7 @@ import { useTheme } from "@/shared/stores/theme-store";
 import { useConfirm } from "@/shared/components/ConfirmModal";
 import { useArtworkUpload } from "../hooks/useArtworkUpload";
 import { studioApi, uploadMockups } from "../api";
+import { toCheckoutParams } from "../checkoutBridge";
 import { DEFAULT_STUDIO_BACKGROUND, buildSaveDesignBody, estimatePrice, validateForSave } from "../contract";
 import { captureMockups } from "../lib/capture";
 import { planMockupShots } from "../lib/capture-plan";
@@ -313,13 +316,13 @@ function SaveDialog({
   onOpenChange,
   captures,
   result,
-  onReview,
+  onCheckout,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   captures: MockupCapture[];
   result: SaveDesignResult | null;
-  onReview: () => void;
+  onCheckout: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -328,14 +331,14 @@ function SaveDialog({
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success text-primary-foreground">
             <Check className="h-5 w-5" />
           </div>
-          <DialogTitle className="text-[22px] font-semibold tracking-tight">Draft saved</DialogTitle>
+          <DialogTitle className="text-[22px] font-semibold tracking-tight">Design saved</DialogTitle>
           <p className="mt-1 text-sm text-muted-foreground">
             {captures.length} mockups captured
             {result && (
               <>
                 {" "}
                 · {result.currencySymbol}
-                {result.pricing.unitPrice.toFixed(2)} cost per item
+                {result.pricing.unitPrice.toFixed(2)} each
               </>
             )}
           </p>
@@ -352,8 +355,8 @@ function SaveDialog({
           <button onClick={() => onOpenChange(false)} className="h-11 flex-1 rounded-full bg-muted text-[14px] font-medium text-foreground">
             Keep editing
           </button>
-          <button onClick={onReview} className="h-11 flex-1 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground">
-            Review &amp; publish
+          <button onClick={onCheckout} className="h-11 flex-1 rounded-full bg-primary text-[14px] font-semibold text-primary-foreground">
+            Go to checkout
           </button>
         </div>
       </DialogContent>
@@ -366,15 +369,13 @@ function Centered({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * `/studio?blank=<slug>[&design=<design id>][&color=<hex>][&view=3d]`
- *  - blank:  the blank product to open (config comes from `GET /studio/products/{slug}/config/`)
- *  - from: a published listing of yours → an editable copy; a plain save creates a new draft (published designs are frozen)
- *  - design: one of the creator's own saved designs → the config carries its layers + colour + `editing_design_id`, so a save is an update
- *  - view=3d: open straight in preview (orbit) mode
+ * `/studio?blank=<slug>[&from=<published slug>][&color=<hex>]`
+ *  - blank: the blank product to open (config comes from `GET /studio/products/{slug}/config/`)
+ *  - from:  published design being personalised → the config carries its layers + `derived_from_published_product_id`
  *  - color: preferred garment colour (hex), applied when the product offers it
  */
 export function StudioPage() {
-  const { blank, design, from, color, view } = useSearch({ strict: false }) as { blank?: string; design?: string; from?: string; color?: string; view?: "3d" };
+  const { blank, from, color } = useSearch({ strict: false }) as { blank?: string; from?: string; color?: string };
   const router = useRouter();
   const navigate = useNavigate();
   const { enableClosingConfirmation, disableClosingConfirmation } = useTelegram();
@@ -394,7 +395,7 @@ export function StudioPage() {
   const [savedOpen, setSavedOpen] = useState(false);
   const loadedFor = useRef<unknown>(null);
 
-  const config = useQuery({ ...studioConfigQuery(blank ?? "", from, design), enabled: !!blank });
+  const config = useQuery({ ...studioConfigQuery(blank ?? "", from), enabled: !!blank });
 
   useEffect(() => {
     enableClosingConfirmation();
@@ -406,8 +407,7 @@ export function StudioPage() {
     loadedFor.current = config.data;
     const preferred = color ? config.data.colors.find((c) => c.hex.toLowerCase() === color.toLowerCase()) : undefined;
     load(config.data, { colorId: preferred?.id });
-    if (view === "3d") useStudio.getState().setMode("preview");
-  }, [config.data, color, view, load]);
+  }, [config.data, color, load]);
 
   // Leaving the studio drops the session's design so the next product starts clean.
   useEffect(
@@ -425,7 +425,7 @@ export function StudioPage() {
 
   const goBack = () => {
     if (router.history.canGoBack()) router.history.back();
-    else void navigate({ to: "/designs" });
+    else void navigate({ to: "/marketplace" });
   };
 
   /** Back button / Telegram back: leaving drops everything that isn't saved, so ask first. */
@@ -505,12 +505,8 @@ export function StudioPage() {
         layers: s.layers,
         bgColor: useStudio.getState().bgColor,
         mockups: uploaded,
-        derivedFrom: null,
+        derivedFrom: s.product.derivedFromPublishedProductId,
         estimate: estimatePrice(s.product, delta, printed),
-        app: "creator-studio",
-        purpose: "listing",
-        isPrivate: s.isPrivate,
-        isUpdate: !!s.designId,
       });
       const res = await studioApi.saveDesign(body, s.designId);
       s.setDesignId(res.designId);
@@ -535,11 +531,21 @@ export function StudioPage() {
     }
   }
 
-  /** Hand off to Publish & Review: the Designs screen opens the review modal for the draft just saved. */
-  function handleReview() {
-    if (!result) return;
+  function handleCheckout() {
+    const s = useStudio.getState();
+    if (!s.product || !result) return;
+    const user = useAuthStore.getState().user;
+    useCheckoutStore.getState().open(
+      toCheckoutParams({
+        product: s.product,
+        colorId: s.colorId,
+        layers: s.layers,
+        result,
+        captures,
+        userFullName: user?.display_name ?? user?.username ?? "",
+      }),
+    );
     setSavedOpen(false);
-    void navigate({ to: "/designs", search: { review: result.designId } });
   }
 
   return (
@@ -550,9 +556,9 @@ export function StudioPage() {
     >
       {!blank ? (
         <Centered>
-          <p className="text-sm text-muted-foreground">Pick a blank from the catalog to start designing</p>
-          <Link to="/catalog" className="rounded-full bg-primary px-5 py-2 text-[13px] font-semibold text-primary-foreground">
-            Browse catalog
+          <p className="text-sm text-muted-foreground">Pick a blank or a design from the marketplace, then tap Customize</p>
+          <Link to="/marketplace" className="rounded-full bg-primary px-5 py-2 text-[13px] font-semibold text-primary-foreground">
+            Browse marketplace
           </Link>
         </Centered>
       ) : config.isError ? (
@@ -611,7 +617,7 @@ export function StudioPage() {
               <PreviewDock />
             </div>
           )}
-          <SaveDialog open={savedOpen} onOpenChange={setSavedOpen} captures={captures} result={result} onReview={handleReview} />
+          <SaveDialog open={savedOpen} onOpenChange={setSavedOpen} captures={captures} result={result} onCheckout={handleCheckout} />
           {confirmModal}
           {saveStep && (
             <StudioOverlay

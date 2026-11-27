@@ -3,19 +3,21 @@
 // Whole payment step for one order, shared by checkout and the order sheet. The form is driven by
 // the selected method (contract §17.1): reference / URL input, payer-account input, optional
 // screenshot, and the merchant account(s) to pay into.
-//   create attempt → verify →  verified | pending_review | failed/rejected
+//   create attempt → verify →  verified | pending_review | rejected | expired
+// While the request runs a full-screen overlay blocks the whole app (PaymentVerifyingOverlay).
 // Each stage is remembered, so a network failure resumes instead of creating a second attempt;
 // after a failed/rejected verification the next submit starts a fresh attempt (new idempotency key).
 
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Clock, Copy, ImageUp, Loader2, RotateCw } from "lucide-react";
+import { Check, Copy, ImageUp, Landmark, Loader2, RotateCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { appToast as toast } from "@/lib/toaster";
 import { uploadAsset } from "@/shared/api/assets";
 import { cn } from "@/lib/utils";
 import { paymentApi, type PaymentAttempt, type PaymentMethod } from "../api";
+import { PaymentVerifyingOverlay, type OverlayAction, type OverlayResult, type VerifyStep } from "./PaymentVerifyingOverlay";
 
 const label = (k: string) => k.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
@@ -29,6 +31,12 @@ interface Props {
   amountLabel: string;
   /** Called when the payment was verified, or accepted for manual review. */
   onDone: (outcome: PaymentOutcome) => void;
+  /** True from submit until the buyer dismisses the result (lets a host sheet refuse to close). */
+  onBusyChange?: (busy: boolean) => void;
+  /** Success button: closes the host sheet. */
+  onFinish?: (outcome: PaymentOutcome) => void;
+  /** Extra buttons on a failed result, e.g. "Pay later" / "Cancel order". */
+  failureActions?: OverlayAction[];
 }
 
 function Copyable({ value, name }: { value: string; name: string }) {
@@ -47,7 +55,7 @@ function Copyable({ value, name }: { value: string; name: string }) {
   );
 }
 
-export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone }: Props) {
+export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone, onBusyChange, onFinish, failureActions = [] }: Props) {
   const methodsQ = useQuery({
     queryKey: ["payment-methods", orderId],
     queryFn: () => paymentApi.methods(orderId),
@@ -62,6 +70,8 @@ export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone }: Prop
   const [step, setStep] = useState("");
   const [outcome, setOutcome] = useState<PaymentOutcome | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [result, setResult] = useState<OverlayResult | null>(null);
+  const [formOpen, setFormOpen] = useState(false); // the reference / receipt modal
 
   const progress = useRef<{ sig: string; key: string; attempt: PaymentAttempt | null }>({ sig: "", key: "", attempt: null });
 
@@ -75,7 +85,16 @@ export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone }: Prop
   const takesScreenshot = !!method && method.supportsScreenshot;
   // A method that collects proof needs the reference, or a screenshot when it accepts one.
   const hasProof = !takesReference && !takesScreenshot ? true : identifier.trim().length > 0 || (takesScreenshot && !!file);
+  const needsForm = !!method && (takesReference || takesScreenshot || method.requiresAccountNumber);
   const ready = !!method && hasProof && (!method.requiresAccountNumber || account.trim().length >= 4);
+
+  const showFailure = (title: string, message: string) =>
+    setResult({
+      kind: "failed",
+      title,
+      message,
+      actions: [{ label: "Try again", onClick: () => { setResult(null); if (needsForm) setFormOpen(true); } }, ...failureActions.map((a) => ({ ...a, variant: a.variant ?? ("secondary" as const) }))],
+    });
 
   const pay = useMutation({
     mutationFn: async (): Promise<PaymentAttempt> => {
@@ -101,8 +120,12 @@ export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone }: Prop
           receiptAssetId,
         });
       }
+      // The create response already carries a final answer for some methods: use it instead of verifying again.
+      if (p.attempt.status !== "pending_review") return p.attempt;
       setStep("Verifying payment…");
-      return paymentApi.verify(p.attempt.id);
+      const verified = await paymentApi.verify(p.attempt.id);
+      p.attempt = verified;
+      return verified;
     },
     onSuccess: (a) => {
       if (a.status === "verified" || a.status === "pending_review") {
@@ -110,33 +133,44 @@ export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone }: Prop
         setFailure(null);
         setOutcome(o);
         onDone(o);
+        setResult({
+          kind: o,
+          title: o === "verified" ? "Payment successful" : "Payment in review",
+          message:
+            o === "verified"
+              ? `Order ${orderNumber} is confirmed and on its way to the printer.`
+              : `Our team is checking your payment for order ${orderNumber}. We'll notify you as soon as it's confirmed.`,
+          actions: [{ label: o === "verified" ? "Continue" : "Got it", onClick: () => { setResult(null); onFinish?.(o); } }],
+        });
         return;
       }
-      // failed / rejected: show why, and make the next submit a brand-new attempt.
+      // rejected / expired: show why, and make the next submit a brand-new attempt.
       progress.current = { sig: "", key: "", attempt: null };
-      setFailure(a.verificationMessage || "We couldn't verify this payment. Check the details and try again.");
+      const why = a.verificationMessage || (a.status === "expired" ? "This payment attempt expired." : "We couldn't verify this payment. Check the details and try again.");
+      setFailure(why);
+      showFailure(a.status === "expired" ? "Payment expired" : "Payment not verified", why);
     },
     onError: (e: Error) => {
       setPct(0);
       setFailure(e.message || "Payment not submitted");
+      showFailure("Payment failed", e.message || "Your payment wasn't submitted. Please try again.");
     },
     onSettled: () => setStep(""),
   });
 
-  if (outcome) {
-    const review = outcome === "pending_review";
-    return (
-      <div className="flex flex-col items-center gap-3 py-12 text-center" role="status">
-        {review ? <Clock className="h-12 w-12 text-amber-500" /> : <CheckCircle2 className="h-12 w-12 text-emerald-500" />}
-        <p className="text-lg font-semibold">{review ? "Payment submitted for review" : "Payment verified"}</p>
-        <p className="max-w-xs text-sm text-muted-foreground">
-          {review
-            ? `Our team is checking your payment for order ${orderNumber}. We'll notify you as soon as it's confirmed.`
-            : `Order ${orderNumber} is confirmed. We'll notify you as it progresses.`}
-        </p>
-      </div>
-    );
-  }
+  const hasShot = takesScreenshot && !!file;
+  const cur = step.startsWith("Uploading") ? 0 : step.startsWith("Creating") ? 1 : 2;
+  const steps: VerifyStep[] = [
+    ...(hasShot ? [{ label: "Uploading receipt", key: 0 }] : []),
+    { label: "Submitting payment", key: 1 },
+    { label: "Verifying with the bank", key: 2 },
+  ].map((x) => ({ label: x.label, state: x.key < cur ? "done" : x.key === cur ? "active" : "todo" }));
+
+  const busy = pay.isPending || !!result;
+  useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
+  const overlay = busy ? (
+    <PaymentVerifyingOverlay inline result={result} steps={steps} progress={step.startsWith("Uploading") ? pct : null} />
+  ) : null;
 
   if (methodsQ.isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
@@ -155,142 +189,193 @@ export function PaymentPanel({ orderId, orderNumber, amountLabel, onDone }: Prop
     return <p className="py-10 text-center text-sm text-muted-foreground">No payment methods are available for this order yet.</p>;
   }
 
-  const inputCls = "mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal outline-none focus:border-gold";
+  const inputCls = "mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal outline-none focus:border-gold";
+  const hoursOf = (m: PaymentMethod) =>
+    m.estimatedProcessingHours != null && m.estimatedProcessingHours > 0
+      ? `Usually confirmed within ${m.estimatedProcessingHours} ${m.estimatedProcessingHours === 1 ? "hour" : "hours"}`
+      : null;
+
+  const submit = () => { setFailure(null); setFormOpen(false); pay.mutate(); };
+  // Methods that collect proof open the form modal first; the rest confirm straight away.
+  const onVerifyClick = () => { setFailure(null); if (needsForm) setFormOpen(true); else submit(); };
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-border bg-surface p-4 text-center">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Amount due</p>
-        <p className="mt-1 text-2xl font-semibold tracking-tight">{amountLabel}</p>
-        <p className="mt-1 text-xs text-muted-foreground">Order {orderNumber}</p>
+    <div className="space-y-5 pb-2">
+      {overlay}
+
+      {/* Amount */}
+      <div className="flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Amount due</p>
+          <p className="text-xs text-muted-foreground">Order {orderNumber}</p>
+        </div>
+        <p className="text-2xl font-semibold tracking-tight tabular-nums">{amountLabel}</p>
       </div>
 
-      <div role="radiogroup" aria-label="Payment method" className="space-y-2">
-        {methodsQ.data.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            role="radio"
-            aria-checked={methodId === m.id}
-            onClick={() => { setMethodId(m.id); setFailure(null); }}
-            className={cn(
-              "flex w-full items-center gap-3 rounded-2xl border p-3.5 text-left transition-colors",
-              methodId === m.id ? "border-gold bg-gold/5" : "border-border bg-surface hover:border-gold/50",
-            )}
-          >
-            {m.logoUrl && <img src={m.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-lg object-contain" loading="lazy" />}
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold">{m.name}</span>
-              {m.description && <span className="mt-0.5 block text-xs text-muted-foreground">{m.description}</span>}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {method && (
-        <>
-          {(method.merchantAccounts.length > 0 || Object.keys(method.display).length > 0) && (
-            <div className="space-y-3 rounded-2xl bg-muted/40 p-3.5 text-sm">
-              <p className="text-xs font-medium text-muted-foreground">Pay to</p>
-              {Object.entries(method.display).map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">{label(k)}</span>
-                  <span>{v}</span>
-                </div>
-              ))}
-              {method.merchantAccounts.map((a, i) => (
-                <div key={i} className="space-y-1 border-t border-border pt-2 first:border-0 first:pt-0">
-                  {a.accountName && <div className="flex justify-between gap-3"><span className="text-muted-foreground">Account name</span><span>{a.accountName}</span></div>}
-                  {a.accountNumber && <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Account number</span><Copyable value={a.accountNumber} name="account number" /></div>}
-                  {a.shortCode && <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Short code</span><Copyable value={a.shortCode} name="short code" /></div>}
-                  {a.accountType && <div className="flex justify-between gap-3"><span className="text-muted-foreground">Type</span><span>{a.accountType}</span></div>}
-                </div>
-              ))}
-            </div>
-          )}
-          {method.instructions && <p className="text-sm">{method.instructions}</p>}
-          {Number(method.feeAmount) > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Fee: {method.feeIsPercentage ? `${method.feeAmount}%` : `${method.currencyCode} ${method.feeAmount}`}
-            </p>
-          )}
-
-          {takesReference && (
-            <label className="block text-sm font-medium">
-              {method.receiptLabel}
-              <input
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                maxLength={500}
-                inputMode={method.supportsUrl ? "url" : "text"}
-                autoCapitalize="characters"
-                placeholder={method.receiptPlaceholder}
-                className={inputCls}
-              />
-              {method.receiptHelpText && <span className="mt-1.5 block text-xs font-normal text-muted-foreground">{method.receiptHelpText}</span>}
-            </label>
-          )}
-
-          {method.requiresAccountNumber && (
-            <label className="block text-sm font-medium">
-              {method.accountLabel}
-              <input value={account} onChange={(e) => setAccount(e.target.value)} maxLength={40} inputMode="numeric" className={inputCls} />
-            </label>
-          )}
-
-          {takesScreenshot && (
-            <div>
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border p-5 text-center hover:bg-muted/40">
-                {preview ? (
-                  <img src={preview} alt="Receipt preview" className="max-h-56 rounded-xl object-contain" />
-                ) : (
-                  <>
-                    <ImageUp className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-sm font-medium">{takesReference ? "Or upload a screenshot" : "Upload receipt screenshot"}</span>
-                  </>
+      {/* Methods: a grid of cards; the chosen one grows to full width and carries its own details + action. */}
+      <section>
+        <h3 className="mb-2 text-sm font-semibold">{methodId ? "Paying with" : "Pay with"}</h3>
+        <div role="radiogroup" aria-label="Pay with" className="grid grid-cols-2 gap-2.5">
+          {methodsQ.data.filter((m) => !methodId || m.id === methodId).map((m) => {
+            const active = methodId === m.id;
+            const payTo = m.merchantAccounts.filter((a) => a.accountNumber || a.accountName || a.shortCode);
+            const displayRows = Object.entries(m.display).filter(([, v]) => v);
+            const hours = hoursOf(m);
+            return (
+              <div
+                key={m.id}
+                className={cn(
+                  "relative overflow-hidden rounded-2xl border transition-colors",
+                  active ? "col-span-2 border-gold bg-gold/5 ring-1 ring-gold" : "border-border bg-surface hover:border-gold/50",
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    if (f.size > MAX_RECEIPT_BYTES) return void toast.error("Image must be under 10 MB");
-                    setFile(f);
-                    setPreview(URL.createObjectURL(f));
-                  }}
-                />
-              </label>
-              {pay.isPending && step.startsWith("Uploading") && (
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-                  <div className="h-full bg-gold transition-all" style={{ width: `${pct}%` }} />
-                </div>
-              )}
+              >
+                {active ? (
+                  <div className="flex items-center gap-2 p-3">
+                    {m.logoUrl ? (
+                      <img src={m.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-lg object-contain" loading="lazy" />
+                    ) : (
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><Landmark className="h-4 w-4" /></span>
+                    )}
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-tight">{m.name}</span>
+                    {(methodsQ.data?.length ?? 0) > 1 && (
+                      <button type="button" onClick={() => { setMethodId(""); setFailure(null); }} className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-gold hover:bg-gold/10">
+                        Change
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={false}
+                    onClick={() => { setMethodId(m.id); setFailure(null); }}
+                    className="flex min-h-[84px] w-full flex-col items-start justify-between gap-2 p-3 text-left"
+                  >
+                    {m.logoUrl ? (
+                      <img src={m.logoUrl} alt="" className="h-8 w-8 shrink-0 rounded-lg object-contain" loading="lazy" />
+                    ) : (
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground"><Landmark className="h-4 w-4" /></span>
+                    )}
+                    <span className="line-clamp-2 text-[13px] font-semibold leading-tight">{m.name}</span>
+                  </button>
+                )}
+
+                {active && (
+                  <div className="space-y-3 border-t border-gold/30 px-3 pb-3 pt-3">
+                    {payTo.length > 0 || displayRows.length > 0 || m.instructions ? (
+                      <div className="space-y-2.5">
+                        <p className="text-xs font-semibold text-muted-foreground">Send {amountLabel} to</p>
+                        {payTo.map((a, i) => (
+                          <div key={i} className="space-y-1.5 text-sm">
+                            {a.accountName && <p className="font-medium">{a.accountName}{a.accountType ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{a.accountType}</span> : null}</p>}
+                            {a.accountNumber && <div className="flex items-center justify-between rounded-xl bg-background/70 px-3 py-1.5"><span className="text-xs text-muted-foreground">Account</span><Copyable value={a.accountNumber} name="account number" /></div>}
+                            {a.shortCode && <div className="flex items-center justify-between rounded-xl bg-background/70 px-3 py-1.5"><span className="text-xs text-muted-foreground">Code</span><Copyable value={a.shortCode} name="short code" /></div>}
+                          </div>
+                        ))}
+                        {displayRows.map(([k, v]) => (
+                          <div key={k} className="flex items-center justify-between gap-3 text-sm">
+                            <span className="text-muted-foreground">{label(k)}</span>
+                            <span className="text-right">{v}</span>
+                          </div>
+                        ))}
+                        {m.instructions && <p className="text-xs leading-relaxed text-muted-foreground">{m.instructions}</p>}
+                        {Number(m.feeAmount) > 0 && (
+                          <p className="text-xs text-muted-foreground">Method fee: {m.feeIsPercentage ? `${m.feeAmount}%` : `${m.currencyCode} ${m.feeAmount}`}</p>
+                        )}
+                      </div>
+                    ) : null}
+
+                    {failure && !result && <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{failure}</p>}
+
+                    <Button className="h-11 w-full rounded-xl bg-gold text-sm font-semibold text-gold-foreground" disabled={pay.isPending} onClick={onVerifyClick}>
+                      {m.kind === "cash_on_delivery" ? "Confirm cash on delivery" : "Verify payment"}
+                    </Button>
+                    {hours && <p className="text-center text-[11px] text-muted-foreground">{hours}</p>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Reference / receipt: a blocking modal (no swipe, no outside tap) with Submit and a small Cancel. */}
+      {formOpen && method && !busy && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirm your payment"
+          className="fixed inset-0 z-[400] flex touch-none items-end justify-center bg-background/80 p-4 backdrop-blur-md sm:items-center"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="max-h-[88dvh] w-full max-w-sm touch-auto space-y-4 overflow-y-auto overscroll-contain rounded-3xl border border-border bg-surface p-5 shadow-xl">
+            <div>
+              <h3 className="text-base font-semibold tracking-tight">Confirm your payment</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">{method.name} · {amountLabel}</p>
             </div>
-          )}
 
-          {method.estimatedProcessingHours != null && method.estimatedProcessingHours > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Usually confirmed within {method.estimatedProcessingHours} {method.estimatedProcessingHours === 1 ? "hour" : "hours"}.
-            </p>
-          )}
+            {takesReference && (
+              <label className="block text-xs font-medium text-muted-foreground">
+                {method.receiptLabel}
+                <input
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  maxLength={500}
+                  inputMode={method.supportsUrl ? "url" : "text"}
+                  autoCapitalize="characters"
+                  placeholder={method.receiptPlaceholder}
+                  className={inputCls}
+                />
+                {method.receiptHelpText && <span className="mt-1 block text-[11px] font-normal">{method.receiptHelpText}</span>}
+              </label>
+            )}
 
-          {failure && (
-            <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-              {failure}
-            </p>
-          )}
+            {method.requiresAccountNumber && (
+              <label className="block text-xs font-medium text-muted-foreground">
+                {method.accountLabel}
+                <input value={account} onChange={(e) => setAccount(e.target.value)} maxLength={40} inputMode="numeric" className={inputCls} />
+              </label>
+            )}
 
-          <Button
-            className="h-12 w-full rounded-2xl bg-gold text-sm font-semibold text-gold-foreground"
-            disabled={!ready || pay.isPending}
-            onClick={() => { setFailure(null); pay.mutate(); }}
-          >
-            {pay.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {pay.isPending ? step || "Working…" : failure ? "Try again" : method.kind === "cash_on_delivery" ? "Confirm cash on delivery" : "Submit payment"}
-          </Button>
-        </>
+            {takesScreenshot && (
+              preview ? (
+                <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-2">
+                  <img src={preview} alt="Receipt preview" className="h-14 w-14 rounded-lg object-cover" />
+                  <span className="min-w-0 flex-1 truncate text-xs">{file?.name}</span>
+                  <button type="button" aria-label="Remove screenshot" onClick={() => { setFile(null); setPreview(null); }} className="grid h-8 w-8 place-items-center rounded-full hover:bg-background">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-border text-sm font-medium text-muted-foreground hover:bg-muted/40">
+                  <ImageUp className="h-4 w-4" />
+                  {takesReference ? "Attach screenshot (optional)" : "Upload receipt screenshot"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      if (f.size > MAX_RECEIPT_BYTES) return void toast.error("Image must be under 10 MB");
+                      setFile(f);
+                      setPreview(URL.createObjectURL(f));
+                    }}
+                  />
+                </label>
+              )
+            )}
+
+            <div className="space-y-2 pt-1 text-center">
+              <Button className="h-12 w-full rounded-2xl bg-gold text-sm font-semibold text-gold-foreground" disabled={!ready} onClick={submit}>
+                Submit
+              </Button>
+              <button type="button" onClick={() => setFormOpen(false)} className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -15,18 +15,14 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as PublicMarketplaceRouteImport } from './routes/_public/marketplace'
-import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
-import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
-import { Route as AuthenticatedDesignsRouteImport } from './routes/_authenticated/designs'
 import { Route as AuthenticatedCheckoutRouteImport } from './routes/_authenticated/checkout'
-import { Route as AuthenticatedCatalogRouteImport } from './routes/_authenticated/catalog'
-import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as PublicProductSlugRouteImport } from './routes/_public/product.$slug'
 import { Route as PublicPSlugRouteImport } from './routes/_public/p.$slug'
+import { Route as AuthenticatedOrderOrderIdRouteImport } from './routes/_authenticated/order.$orderId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -56,19 +52,9 @@ const PublicMarketplaceRoute = PublicMarketplaceRouteImport.update({
   path: '/marketplace',
   getParentRoute: () => PublicRoute,
 } as any)
-const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
-  id: '/wallet',
-  path: '/wallet',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
   id: '/studio',
   path: '/studio',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedStoreRoute = AuthenticatedStoreRouteImport.update({
-  id: '/store',
-  path: '/store',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -87,24 +73,9 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedDesignsRoute = AuthenticatedDesignsRouteImport.update({
-  id: '/designs',
-  path: '/designs',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedCheckoutRoute = AuthenticatedCheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedCatalogRoute = AuthenticatedCatalogRouteImport.update({
-  id: '/catalog',
-  path: '/catalog',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const PublicProductSlugRoute = PublicProductSlugRouteImport.update({
@@ -117,40 +88,38 @@ const PublicPSlugRoute = PublicPSlugRouteImport.update({
   path: '/p/$slug',
   getParentRoute: () => PublicRoute,
 } as any)
+const AuthenticatedOrderOrderIdRoute =
+  AuthenticatedOrderOrderIdRouteImport.update({
+    id: '/order/$orderId',
+    path: '/order/$orderId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
-  '/catalog': typeof AuthenticatedCatalogRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
-  '/designs': typeof AuthenticatedDesignsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/store': typeof AuthenticatedStoreRoute
   '/studio': typeof AuthenticatedStudioRoute
-  '/wallet': typeof AuthenticatedWalletRoute
   '/marketplace': typeof PublicMarketplaceRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/order/$orderId': typeof AuthenticatedOrderOrderIdRoute
   '/p/$slug': typeof PublicPSlugRoute
   '/product/$slug': typeof PublicProductSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
-  '/catalog': typeof AuthenticatedCatalogRoute
   '/checkout': typeof AuthenticatedCheckoutRoute
-  '/designs': typeof AuthenticatedDesignsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/store': typeof AuthenticatedStoreRoute
   '/studio': typeof AuthenticatedStudioRoute
-  '/wallet': typeof AuthenticatedWalletRoute
   '/marketplace': typeof PublicMarketplaceRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/order/$orderId': typeof AuthenticatedOrderOrderIdRoute
   '/p/$slug': typeof PublicPSlugRoute
   '/product/$slug': typeof PublicProductSlugRoute
 }
@@ -160,18 +129,14 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/login': typeof LoginRoute
-  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
-  '/_authenticated/catalog': typeof AuthenticatedCatalogRoute
   '/_authenticated/checkout': typeof AuthenticatedCheckoutRoute
-  '/_authenticated/designs': typeof AuthenticatedDesignsRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/store': typeof AuthenticatedStoreRoute
   '/_authenticated/studio': typeof AuthenticatedStudioRoute
-  '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/_public/marketplace': typeof PublicMarketplaceRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/_authenticated/order/$orderId': typeof AuthenticatedOrderOrderIdRoute
   '/_public/p/$slug': typeof PublicPSlugRoute
   '/_public/product/$slug': typeof PublicProductSlugRoute
 }
@@ -180,36 +145,28 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/analytics'
-    | '/catalog'
     | '/checkout'
-    | '/designs'
     | '/notifications'
     | '/orders'
     | '/profile'
-    | '/store'
     | '/studio'
-    | '/wallet'
     | '/marketplace'
     | '/sitemap/xml'
+    | '/order/$orderId'
     | '/p/$slug'
     | '/product/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/analytics'
-    | '/catalog'
     | '/checkout'
-    | '/designs'
     | '/notifications'
     | '/orders'
     | '/profile'
-    | '/store'
     | '/studio'
-    | '/wallet'
     | '/marketplace'
     | '/sitemap/xml'
+    | '/order/$orderId'
     | '/p/$slug'
     | '/product/$slug'
   id:
@@ -218,18 +175,14 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_public'
     | '/login'
-    | '/_authenticated/analytics'
-    | '/_authenticated/catalog'
     | '/_authenticated/checkout'
-    | '/_authenticated/designs'
     | '/_authenticated/notifications'
     | '/_authenticated/orders'
     | '/_authenticated/profile'
-    | '/_authenticated/store'
     | '/_authenticated/studio'
-    | '/_authenticated/wallet'
     | '/_public/marketplace'
     | '/sitemap/xml'
+    | '/_authenticated/order/$orderId'
     | '/_public/p/$slug'
     | '/_public/product/$slug'
   fileRoutesById: FileRoutesById
@@ -286,25 +239,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicMarketplaceRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/_authenticated/wallet': {
-      id: '/_authenticated/wallet'
-      path: '/wallet'
-      fullPath: '/wallet'
-      preLoaderRoute: typeof AuthenticatedWalletRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/studio': {
       id: '/_authenticated/studio'
       path: '/studio'
       fullPath: '/studio'
       preLoaderRoute: typeof AuthenticatedStudioRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/store': {
-      id: '/_authenticated/store'
-      path: '/store'
-      fullPath: '/store'
-      preLoaderRoute: typeof AuthenticatedStoreRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
@@ -328,32 +267,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/designs': {
-      id: '/_authenticated/designs'
-      path: '/designs'
-      fullPath: '/designs'
-      preLoaderRoute: typeof AuthenticatedDesignsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/checkout': {
       id: '/_authenticated/checkout'
       path: '/checkout'
       fullPath: '/checkout'
       preLoaderRoute: typeof AuthenticatedCheckoutRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/catalog': {
-      id: '/_authenticated/catalog'
-      path: '/catalog'
-      fullPath: '/catalog'
-      preLoaderRoute: typeof AuthenticatedCatalogRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/analytics': {
-      id: '/_authenticated/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_public/product/$slug': {
@@ -370,33 +288,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicPSlugRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_authenticated/order/$orderId': {
+      id: '/_authenticated/order/$orderId'
+      path: '/order/$orderId'
+      fullPath: '/order/$orderId'
+      preLoaderRoute: typeof AuthenticatedOrderOrderIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
-  AuthenticatedCatalogRoute: typeof AuthenticatedCatalogRoute
   AuthenticatedCheckoutRoute: typeof AuthenticatedCheckoutRoute
-  AuthenticatedDesignsRoute: typeof AuthenticatedDesignsRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedStoreRoute: typeof AuthenticatedStoreRoute
   AuthenticatedStudioRoute: typeof AuthenticatedStudioRoute
-  AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedOrderOrderIdRoute: typeof AuthenticatedOrderOrderIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
-  AuthenticatedCatalogRoute: AuthenticatedCatalogRoute,
   AuthenticatedCheckoutRoute: AuthenticatedCheckoutRoute,
-  AuthenticatedDesignsRoute: AuthenticatedDesignsRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedStoreRoute: AuthenticatedStoreRoute,
   AuthenticatedStudioRoute: AuthenticatedStudioRoute,
-  AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedOrderOrderIdRoute: AuthenticatedOrderOrderIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

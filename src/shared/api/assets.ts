@@ -6,7 +6,7 @@
  */
 import { API_BASE_URL, ApiError, getStoredToken, parseApiError, api } from "./client";
 
-export type AssetPurpose = "creator_artwork" | "design_mockup" | "payment_receipt" | "job_proof" | "product_thumbnail" | "store_banner";
+export type AssetPurpose = "creator_artwork" | "design_mockup" | "payment_receipt" | "job_proof";
 
 /** What `POST /assets/upload/` returns. */
 export interface UploadedAsset {

@@ -9,6 +9,7 @@ import { Canvas } from "@react-three/fiber";
 import { ContactShadows, Environment, Lightformer, OrbitControls, useProgress } from "@react-three/drei";
 import type { Viewer3D } from "@/features/studio/contract";
 import { CanvasErrorBoundary } from "@/features/studio/components/CanvasErrorBoundary";
+import { orbitLimits } from "@/features/studio/lib/orbit-limits";
 import { ProductModelView } from "@/features/studio/components/ProductModel";
 
 interface Props {
@@ -30,7 +31,7 @@ function LoadingBridge({ onLoadingChange }: { onLoadingChange?: (loading: boolea
 }
 
 export function ProductViewer3D({ viewer, colorHex, onLoadingChange, onError }: Props) {
-  const { light, camera, environment } = viewer;
+  const { light, camera, environment, rotation } = viewer;
   return (
     <CanvasErrorBoundary onError={onError}>
       <Canvas
@@ -76,7 +77,8 @@ export function ProductViewer3D({ viewer, colorHex, onLoadingChange, onError }: 
           enableDamping
           dampingFactor={0.08}
           autoRotate={environment.autoRotateInPreview}
-          autoRotateSpeed={environment.autoRotateSpeed}
+          autoRotateSpeed={rotation?.autoRotateSpeed ?? environment.autoRotateSpeed}
+          {...orbitLimits(camera, rotation)}
         />
       </Canvas>
     </CanvasErrorBoundary>

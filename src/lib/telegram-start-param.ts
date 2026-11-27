@@ -18,11 +18,8 @@ const PRODUCT_PREFIX = "p_";
  * as new top-level deep-linkable sections are introduced.
  */
 const ROUTE_PARAMS: Record<string, string> = {
-  store: "/store",
-  catalog: "/catalog",
-  designs: "/designs",
-  wallet: "/wallet",
-  analytics: "/analytics",
+  orders: "/orders",
+  marketplace: "/marketplace",
 };
 
 export function parseStartParam(raw: string | null | undefined): StartParamTarget | null {

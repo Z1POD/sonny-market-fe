@@ -329,7 +329,7 @@ export function ProfilePage() {
           <ul className="divide-y divide-border">
             {recent.data.map((o) => (
               <li key={o.id}>
-                <Link to="/orders" search={{ order: o.id }} className="flex items-center gap-3 py-3">
+                <Link to="/order/$orderId" params={{ orderId: o.id }} className="flex items-center gap-3 py-3">
                   <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{o.order_number}</p>

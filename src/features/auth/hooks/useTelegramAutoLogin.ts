@@ -5,7 +5,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { appToast as toast } from "@/lib/toaster";
 import { useTelegram } from "@/shared/hooks/use-telegram";
 import { getStoredToken } from "@/shared/api/client";
-import { authApi } from "../api";
+import { parseHref } from "@/lib/nav";
 import { useAuthStore } from "../store";
 
 interface UseTelegramAutoLoginOptions {
@@ -14,7 +14,7 @@ interface UseTelegramAutoLoginOptions {
 }
 
 export function useTelegramAutoLogin({
-  redirectTo = "/catalog",
+  redirectTo = "/marketplace",
   enabled = true,
 }: UseTelegramAutoLoginOptions = {}) {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ export function useTelegramAutoLogin({
         await hydrate().catch(() => {});
         if (cancelled || !stillOwnsRoute()) return;
         if (useAuthStore.getState().status === "authenticated") {
-          navigate({ to: redirectTo, replace: true });
+          navigate({ ...(parseHref(redirectTo) as any), replace: true });
           setChecked(true);
           return;
         }
@@ -62,7 +62,7 @@ export function useTelegramAutoLogin({
       try {
         await useAuthStore.getState().loginWithTelegram(initData);
         if (cancelled || !stillOwnsRoute()) return;
-        navigate({ to: redirectTo, replace: true });
+        navigate({ ...(parseHref(redirectTo) as any), replace: true });
       } catch (err) {
         if (!cancelled) {
           toast.error((err as Error).message || "Auto sign-in failed");

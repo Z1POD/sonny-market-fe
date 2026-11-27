@@ -9,6 +9,7 @@ import {
   pickDefaultVariant,
   validateForSave,
 } from "./contract";
+import { toCheckoutParams } from "./checkoutBridge";
 import type { ImageLayer } from "./types";
 
 const product = mapStudioConfig({ ...RAW_STUDIO_CONFIG, initial_layers: RAW_DERIVED_LAYERS });
@@ -38,6 +39,21 @@ describe("mapStudioConfig", () => {
     expect(sparse.capture.shots).toHaveLength(5);
     expect(sparse.defaultPrintMethodId).toBe("dtg");
     expect(sparse.background).toBeNull();
+  });
+
+  it("defaults the artwork policy to everything on, and reads the toggles + tied rows when present", () => {
+    expect(product.editor.artworkAllowed).toEqual({ tied: true, library: true, uploads: true, text: true });
+    expect(product.editor.tiedArtwork).toEqual([]);
+    const tied = { id: "t1", name: "Gecko", category: "artwork" as const, premium: false, src: "https://x/g.png", asset_id: "a1" };
+    const p = mapStudioConfig({
+      ...RAW_STUDIO_CONFIG,
+      editor: { ...RAW_STUDIO_CONFIG.editor, artwork_allowed: { tied: true, library: false, uploads: false, text: true }, tied_artwork: [tied], upload: { ...RAW_STUDIO_CONFIG.editor.upload, allowed: false } },
+    });
+    expect(p.editor.artworkAllowed).toEqual({ tied: true, library: false, uploads: false, text: true });
+    expect(p.editor.tiedArtwork.map((t) => t.id)).toEqual(["t1"]);
+    // upload.allowed alone (no artwork_allowed) still switches uploads off
+    const q = mapStudioConfig({ ...RAW_STUDIO_CONFIG, editor: { ...RAW_STUDIO_CONFIG.editor, upload: { ...RAW_STUDIO_CONFIG.editor.upload, allowed: false } } });
+    expect(q.editor.artworkAllowed.uploads).toBe(false);
   });
 
   it("skips an out-of-stock default colour", () => {
@@ -121,29 +137,18 @@ describe("buildSaveDesignBody", () => {
   });
 });
 
-describe("creator save (listing)", () => {
-  const base = {
-    product, colorId: "navy", printMethodId: "dtg", layers: product.initialLayers, bgColor: null as string | null,
-    mockups: [{ assetId: "m1", angle: "front" as const }], derivedFrom: null, estimate: 29, now: new Date("2026-01-01T00:00:00Z"),
-  };
-  it("creates a listing draft with a title", () => {
-    const b = buildSaveDesignBody({ ...base, app: "creator-studio", purpose: "listing" });
-    expect(b).toMatchObject({ purpose: "listing", client: { app: "creator-studio" } });
-    expect(b.title).toContain(product.name);
-  });
-  it("never resends the title/description on update, so a renamed design keeps its name", () => {
-    const b = buildSaveDesignBody({ ...base, app: "creator-studio", purpose: "listing", isUpdate: true });
-    expect("title" in b).toBe(false);
-    expect("description" in b).toBe(false);
-  });
-  it("sends the chosen garment colour so the saved photos and the re-opened scene agree", () => {
-    const b = buildSaveDesignBody({ ...base, colorId: "navy" });
-    expect(b).toMatchObject({ color_id: "navy", color_hex: "#22304d" });
-  });
-  it("maps the creator's own uploads and the editing id", () => {
-    expect(mapArtworkItem({ id: "a1", name: "Logo", category: "mine", src: "https://x/y.png", premium: false, asset_id: "as1" })).toMatchObject({ category: "mine", assetId: "as1" });
-    expect(mapStudioConfig({ ...RAW_STUDIO_CONFIG, initial_layers: [], editing_design_id: "d-9" }).editingDesignId).toBe("d-9");
-    expect(product.editingDesignId).toBeNull();
+describe("toCheckoutParams", () => {
+  it("builds checkout input from the saved design", () => {
+    const result = mapSaveResponse(RAW_SAVE_RESPONSE);
+    const p = toCheckoutParams({ product, colorId: "navy", layers: product.initialLayers, result, captures: [], userFullName: "Sam" });
+    expect(p.productId).toBe(result.designId);
+    expect(p.basePrice).toBe(24);
+    expect(p.printCost).toBe(9);
+    expect(p.selectedColor).toBe("#22304d");
+    expect(p.printAreas).toEqual([{ id: "front", name: "Front" }]);
+    expect(p.variants).toHaveLength(36);
+    expect(p.variants[0]).toMatchObject({ id: "var_white_xs", size: "XS", quantity: 1 });
+    expect(p.mockupUrl).toContain("front.png");
   });
 });
 

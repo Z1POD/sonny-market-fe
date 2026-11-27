@@ -16,6 +16,7 @@ import { findVariant, mockupsForColor } from "../contract";
 import type { ProductDetail, ProductDetailParams } from "../api";
 import { productQuery } from "../queries";
 import { ProductCard } from "./ProductCard";
+import { LimitedBadge } from "./LimitedBadge";
 import { ProductViewer3D } from "./ProductViewer3D";
 import { BrandLoader } from "@/components/ui/loader";
 import { haptics } from "@/shared/lib/haptics";
@@ -282,12 +283,18 @@ function ProductDetailContent({
                 </div>
                 )}
 
+                {product.is_limited_edition && (
+                  <div className="absolute left-4 top-4 z-20">
+                    <LimitedBadge editionSize={product.edition_size} className="h-10 min-w-10 px-3 text-xs" />
+                  </div>
+                )}
+
                 {canPersonalize && (
                   <PersonalizeMenu onPersonalize={onCustomize} />
                 )}
 
                 {(soldOutAll || lowStock != null) && (
-                <div className="absolute right-4 top-4 flex flex-col items-end gap-2">
+                <div className={`absolute right-4 ${canPersonalize ? "top-[4.5rem]" : "top-4"} flex flex-col items-end gap-2`}>
                     <span
                         title={soldOutAll ? OUT_OF_STOCK_MESSAGE : undefined}
                         className={
@@ -412,13 +419,13 @@ function ProductDetailContent({
                 {gallery.length > 1 && (
                 <section className="mt-6">
                     <p className="mb-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Gallery</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto">
                     {gallery.map((g, i) => (
                         <button
                         key={i}
                         onClick={() => { setIs3D(false); goToImage(i); }}
                         aria-label={g.label || `Image ${i + 1}`}
-                        className={`aspect-square overflow-hidden rounded-xl border ${
+                        className={`aspect-square w-[calc((100%-1rem)/3)] shrink-0 snap-start overflow-hidden rounded-xl border ${
                             i === activeImage && !is3D ? "border-foreground" : "border-border"
                         }`}
                         >
@@ -565,7 +572,7 @@ function PersonalizeMenu({ onPersonalize }: { onPersonalize: () => void }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="absolute left-4 top-4 z-20">
+    <div ref={ref} className="absolute right-4 top-4 z-20">
       <button
         type="button"
         aria-label="More options"
@@ -579,7 +586,7 @@ function PersonalizeMenu({ onPersonalize }: { onPersonalize: () => void }) {
       {open && (
         <div
           role="menu"
-          className="absolute left-0 top-12 w-60 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-xl"
+          className="absolute right-0 top-12 w-60 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-xl"
         >
           <button
             role="menuitem"

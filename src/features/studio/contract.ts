@@ -267,8 +267,6 @@ export interface RawSaveDesignBody {
   description?: string;
   /** `order` (default): a personal design the buyer will order. `listing`: a draft product in the creator's store. */
   purpose?: "order" | "listing";
-  /** Listing drafts only: unlisted after approval — reachable through its share link. */
-  is_private?: boolean;
   color_id: string;
   color_hex: string;
   /** User-chosen canvas backdrop; null = studio default. */

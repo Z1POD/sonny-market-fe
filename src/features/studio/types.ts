@@ -118,7 +118,7 @@ export interface EditorConfig {
   backgroundSwatches: string[];
   /** Lowest plan allowed to use `premium` library artwork. */
   premiumArtworkMinTier: UserTier;
-  /** Artwork policy: which layer sources this product offers. */
+  /** Artwork policy: which layer sources this product offers (saved designs stay grandfathered). */
   artworkAllowed: { tied: boolean; library: boolean; uploads: boolean; text: boolean };
   /** The product's own artwork, in tie order (render first when `artworkAllowed.tied`). */
   tiedArtwork: ArtworkItem[];

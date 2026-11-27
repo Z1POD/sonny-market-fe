@@ -66,7 +66,7 @@ export function NotFoundPage() {
           transition={{ duration: 0.5, delay: 0.25 }}
           className="mt-3 text-sm leading-relaxed text-muted-foreground"
         >
-          This piece seems to have left the collection. Let's get you back to the studio.
+          This piece seems to have left the collection. Let's get you back to the marketplace.
         </motion.p>
 
         <motion.div
@@ -76,11 +76,11 @@ export function NotFoundPage() {
           className="mt-8 flex flex-wrap justify-center gap-3"
         >
           <Link
-            to="/designs"
+            to="/marketplace"
             className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
           >
             <Shirt className="h-4 w-4" />
-            Back to Studio
+            Back to Marketplace
           </Link>
           <button
             onClick={() => window.history.back()}

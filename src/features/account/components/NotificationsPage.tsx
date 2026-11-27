@@ -44,7 +44,7 @@ function Row({ n }: { n: AppNotification }) {
   );
   const cls = "flex gap-3 rounded-2xl border border-border bg-surface p-3.5";
   return n.metadata?.order_id ? (
-    <Link to="/orders" search={{ order: n.metadata.order_id }} className={cn(cls, "transition-colors hover:border-gold/50")}>
+    <Link to="/order/$orderId" params={{ orderId: n.metadata.order_id }} className={cn(cls, "transition-colors hover:border-gold/50")}>
       {inner}
     </Link>
   ) : (

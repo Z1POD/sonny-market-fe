@@ -1,30 +1,31 @@
 // src/shared/components/layout/Header.tsx
 "use client";
 
+import { UserAvatar } from "@/shared/components/UserAvatar";
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   ChevronDown,
   ChevronUp,
-  Palette,
   Moon,
-  LayoutGrid,
+  Search,
+  Receipt,
+  ShoppingBag,
   Store as StoreIcon,
-  Wallet as WalletIcon,
   Sun,
   User as UserIcon,
 } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store";
+import { useCart } from "@/features/market/store";
+import { useSearchSheet } from "@/features/market/searchStore";
 import { useTheme } from "@/shared/stores/theme-store";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "./UserMenu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV = [
-  { to: "/catalog", label: "Catalog", icon: Palette },
-  { to: "/designs", label: "Designs", icon: LayoutGrid },
-  { to: "/store", label: "Dashboard", icon: StoreIcon },
-  { to: "/wallet", label: "Earnings", icon: WalletIcon },
+  { to: "/marketplace", label: "Market", icon: StoreIcon },
+  { to: "/orders", label: "Orders", icon: Receipt },
 ] as const;
 
 
@@ -35,14 +36,17 @@ interface HeaderProps {
 
 export function Header({ variant = "full" }: HeaderProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const cartCount = useCart((s) => s.items.reduce((a, b) => a + b.quantity, 0));
+  const openCart = useCart((s) => s.openDrawer);
   const user = useAuthStore((s) => s.user);
+  const openSearch = useSearchSheet((s) => s.setOpen);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const isMinimal = variant === "minimal";
 
   useEffect(() => setIsExpanded(false), [pathname]);
 
-  const isHome = pathname === "/" || pathname === "/catalog";
+  const isHome = pathname === "/" || pathname === "/marketplace";
 
   return (
     <header
@@ -66,7 +70,7 @@ export function Header({ variant = "full" }: HeaderProps) {
       >
         {!isMinimal && (
           <Link
-            to="/catalog"
+            to="/marketplace"
             className={cn("items-center gap-2", isExpanded ? "flex" : "hidden md:flex")}
           >
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
@@ -115,15 +119,34 @@ export function Header({ variant = "full" }: HeaderProps) {
           <div className="flex items-center gap-1.5">
             {isMinimal ? <ThemeToggle /> : ""}
 
+            <button
+              aria-label="Search"
+              onClick={() => openSearch(true)}
+              className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              aria-label="Open cart"
+              onClick={openCart}
+              className="relative grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              {cartCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[10px] font-bold text-gold-foreground">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             {!isMinimal && (
               <UserMenu
                 anchor="header"
                 className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 {user ? (
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                    {(user.display_name ?? "?")[0]?.toUpperCase()}
-                  </span>
+                  <UserAvatar user={user} className="h-7 w-7 text-xs" />
                 ) : (
                   <UserIcon className="h-4 w-4" />
                 )}

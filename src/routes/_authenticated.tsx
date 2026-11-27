@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
     if (typeof window !== "undefined" && !getStoredToken()) {
       throw redirect({
         to: "/login",
-        search: { redirect: location.pathname },
+        search: { redirect: location.pathname + (location.searchStr ?? "") },
       });
     }
   },
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated")({
 const steps = [
   { icon: Shirt, label: "Pick" },
   { icon: Palette, label: "Customize" },
-  { icon: ShoppingBag, label: "Sell" },
+  { icon: ShoppingBag, label: "Sell / Order" },
 ];
 
 function AuthenticatedLayout() {
@@ -51,7 +51,7 @@ function AuthenticatedLayout() {
     if (status === "unauthenticated") {
       navigate({
         to: "/login",
-        search: { redirect: pathname },
+        search: { redirect: pathname + window.location.search },
         replace: true,
       });
     }

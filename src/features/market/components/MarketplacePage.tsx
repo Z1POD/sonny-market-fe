@@ -16,6 +16,7 @@ import { Loader2, Search, Sparkles, Fingerprint } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { haptics } from "@/shared/lib/haptics";
 import { blanksInfiniteQuery, categoriesQuery, homepageQuery, productsInfiniteQuery } from "../queries";
+import { LimitedBadge } from "./LimitedBadge";
 import { ProductCard } from "./ProductCard";
 import { getStockBadge } from "../stock";
 import type { ProductListItem, ProductListParams } from "../types";
@@ -195,8 +196,8 @@ export function MarketplacePage() {
             <div className="absolute left-1/2 top-1/3 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-gold/10 blur-3xl" />
           </div>
 
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 pb-16 pt-10 md:grid-cols-2 md:gap-16 md:px-8 md:pb-24 md:pt-16">
-            <div>
+          <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-4 pb-16 pt-10 md:grid-cols-2 md:gap-16 md:px-8 md:pb-24 md:pt-16">
+            <div className="min-w-0">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/5 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-gold">
                     <Sparkles className="h-3 w-3" />
                     {heroCollection?.name ?? "M I M O | Marketplace"}
@@ -212,26 +213,29 @@ export function MarketplacePage() {
                     "Customize tees, hoodies, bags, mugs, bottles and more in our design studio. Keep your creation or publish it to the marketplace, we handle production, fulfillment, and delivery."}
                 </p>
 
-                <div className="mt-6 flex flex-wrap gap-3 md:mt-7">
-                    {featured && (
-                    <Link
-                        to="/product/$slug"
-                        params={{ slug: featured.slug }}
-                        onClick={() => haptics.impactOccurred("light")}
-                        className="inline-flex h-10 md:h-12 items-center gap-2 rounded-full bg-foreground px-6 text-sm font-semibold text-background transition-transform active:scale-[0.98]"
-                    >
-                        Shop now
-                    </Link>
-                    )}
-
-                    <a
-                    href="#shop-all"
-                    onClick={() => haptics.impactOccurred("light")}
-                    className="inline-flex h-10 md:h-12 items-center rounded-full border border-border bg-surface px-6 text-sm font-medium transition-colors hover:border-gold"
-                    >
-                    Browse all
-                    </a>
-                </div>
+                {(categories?.length ?? 0) > 0 && (
+                  <div className="no-scrollbar -mx-4 mt-6 flex min-w-0 gap-2 overflow-x-auto px-4 md:mx-0 md:mt-7 md:px-0" role="tablist" aria-label="Categories">
+                    {[{ slug: "", name: "All" }, ...(categories ?? [])].map((c) => {
+                      const active = (search.category ?? "") === c.slug;
+                      return (
+                        <button
+                          key={c.slug || "all"}
+                          role="tab"
+                          aria-selected={active}
+                          onClick={() => {
+                            haptics.impactOccurred("light");
+                            navigate({ to: "/marketplace", search: { ...search, category: c.slug || undefined }, hash: "shop-all" });
+                          }}
+                          className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
+                            active ? "border-foreground bg-foreground text-background" : "border-border bg-surface text-muted-foreground hover:border-gold"
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
             </div>
 
             {featured && (
@@ -270,9 +274,7 @@ export function MarketplacePage() {
 
                     <div className="absolute left-4 top-4 flex flex-col gap-2">
                       {featured.is_limited_edition && (
-                        <span className="w-fit rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-gold-foreground">
-                          Limited
-                        </span>
+                        <LimitedBadge editionSize={featured.edition_size} />
                       )}
                     </div>
                     <div className="absolute right-4 top-4 flex flex-col gap-2">
@@ -397,7 +399,7 @@ export function MarketplacePage() {
             </h2>
           </div>
           <div className="grid auto-rows-[260px] grid-cols-2 gap-2 md:grid-cols-4 sm:gap-3 md:gap-4">
-            {homepage.trending.products.slice(0, 6).map((p, i) => (
+            {homepage.trending.products.slice(0, 4).map((p, i) => (
               <ProductCard
                 key={p.id}
                 product={p}
@@ -421,21 +423,6 @@ export function MarketplacePage() {
           </div>
           <div className="grid auto-rows-[260px] grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
             {homepage.new_arrivals.products.slice(0, 6).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* MAKE YOUR OWN — blank products, straight into the studio */}
-      {blanks.length > 0 && (
-        <section id="make-your-own" className="mx-auto max-w-7xl px-4 pb-16 md:px-8">
-          <div className="mb-6">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Blank products</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Make your own</h2>
-          </div>
-          <div className="grid auto-rows-[300px] grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            {blanks.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
@@ -485,7 +472,7 @@ export function MarketplacePage() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              {isFiltered ? "Results" : "Shop all"}
+              {isFiltered ? "Results" : "Marketplace"}
             </p>
             <h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
               {search.q ? `"${search.q}"` : "Every piece"}
@@ -502,30 +489,6 @@ export function MarketplacePage() {
             </Link>
           )}
         </div>
-
-        {(categories?.length ?? 0) > 0 && (
-          <div className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist" aria-label="Categories">
-            {[{ slug: "", name: "All" }, ...(categories ?? [])].map((c) => {
-              const active = (search.category ?? "") === c.slug;
-              return (
-                <button
-                  key={c.slug || "all"}
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => {
-                    haptics.impactOccurred("light");
-                    navigate({ to: "/marketplace", search: { ...search, category: c.slug || undefined }, hash: "shop-all" });
-                  }}
-                  className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-medium transition-colors ${
-                    active ? "border-foreground bg-foreground text-background" : "border-border bg-surface text-muted-foreground hover:border-gold"
-                  }`}
-                >
-                  {c.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
 
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -567,6 +530,22 @@ export function MarketplacePage() {
           </>
         )}
       </section>
+      {/* MAKE YOUR OWN — blank products, straight into the studio (one swipeable row) */}
+      {blanks.length > 0 && (
+        <section id="make-your-own" className="mx-auto max-w-7xl border-t border-border px-4 py-14 md:px-8">
+          <div className="mb-6">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Blank products</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Make your own</h2>
+          </div>
+          <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 md:mx-0 md:gap-4 md:px-0">
+            {blanks.map((p) => (
+              <div key={p.id} className="h-[300px] w-[44vw] min-w-[170px] max-w-[260px] shrink-0 snap-start md:w-[240px] [&>*]:h-full">
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

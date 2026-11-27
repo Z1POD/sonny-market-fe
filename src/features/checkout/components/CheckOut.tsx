@@ -2,6 +2,7 @@
 
 
 import { useEffect, useCallback, useMemo } from "react";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, X } from "lucide-react";
 import { useTelegram } from "@/shared/hooks/use-telegram";
@@ -46,6 +47,8 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
     reset,
   } = useCheckoutStore();
   const { isTelegram } = useTelegram();
+  const navigate = useNavigate();
+  const router = useRouter();
 
   const isCartOrigin = origin === "cart";
 
@@ -64,26 +67,31 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
   const firstStepId = STEPS[0]?.id;
   const isFirstStep = step === firstStepId;
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen && step !== "payment") {
-        isFirstStep ? reset() : goBack();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, step, isFirstStep, goBack, reset]);
+  /** Leave the checkout page (the app shell clears the draft when the route changes). */
+  const leave = useCallback(() => {
+    if (router.history.canGoBack()) router.history.back();
+    else navigate({ to: "/marketplace" });
+  }, [router, navigate]);
 
-  const handleClose = useCallback(() => {
-    if (
-      step === "payment" &&
-      window.confirm("Your order is in progress. Close anyway?")
-    ) {
-      reset();
-    } else if (step !== "payment") {
-      reset();
-    }
-  }, [step, reset]);
+  // Escape, the in-page back arrow and Telegram's Back button all step back, or leave from the first step.
+  // On the payment step the order already exists, so back is ignored (use the page's own buttons).
+  const stepBack = useCallback(() => {
+    if (step === "payment") return;
+    if (isFirstStep) leave();
+    else goBack();
+  }, [step, isFirstStep, leave, goBack]);
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape" && isOpen) stepBack(); };
+    window.addEventListener("keydown", key);
+    window.addEventListener("checkout:request-back", stepBack);
+    return () => {
+      window.removeEventListener("keydown", key);
+      window.removeEventListener("checkout:request-back", stepBack);
+    };
+  }, [isOpen, stepBack]);
+
+  const handleClose = leave;
 
   const currentStepIdx = STEPS.findIndex((s) => s.id === step);
 
@@ -94,12 +102,12 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col bg-background"
+      className="flex h-dvh flex-col bg-background pt-[calc(var(--tg-safe-area-top,0px)+3.75rem)]"
     >
       <header
         className={cn(
           "flex items-center gap-3 border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-xl",
-          isTelegram && "pt-[var(--tg-safe-area-top,0px)]"
+          
         )}
       >
         {isFirstStep ? (

@@ -23,8 +23,6 @@ yarn.lock
 /playwright/.cache/
 .tanstack
 
-API_CONTRACT.*
-INTEGRATION.*
 map_project.py
 /scripts
 /scripts/*

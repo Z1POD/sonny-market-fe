@@ -1,24 +1,17 @@
 // src/features/auth/hooks/useTelegramLaunch.ts
 
 import { useEffect, useRef } from "react";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTelegram } from "@/shared/hooks/use-telegram";
-import { parseStartParam } from "@/lib/telegram-start-param";
 import { getStoredToken } from "@/shared/api/client";
-import { authApi } from "../api";
 import { useAuthStore } from "../store";
 
 
 export function useTelegramLaunch() {
   const { tg } = useTelegram();
-  const navigate = useNavigate();
   const setToken = useAuthStore((s) => s.setToken);
   const hydrate = useAuthStore((s) => s.hydrate);
   const handled = useRef(false);
 
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
 
   useEffect(() => {
     if (handled.current) return;
@@ -46,16 +39,10 @@ export function useTelegramLaunch() {
       });
     };
 
-    const target = parseStartParam(tg.initDataUnsafe?.start_param);
-
-    // Navigate immediately — do not wait on auth for public destinations.
-    if (target?.type === "route") {
-      navigate({ to: "/", search: { redirect: target.path }, replace: true });
-    } else if (pathnameRef.current === "/") {
-      navigate({ to: "/catalog", replace: true });
-    }
+    // Navigation away from "/" is owned by the splash screen (useSplashBoot), which
+    // waits for sign-in + catalog warm-up and then honours any start_param deep link.
 
     // Fire-and-forget: resolves auth state in the background.
     void signIn();
-  }, [tg, navigate, setToken, hydrate]);
+  }, [tg, setToken, hydrate]);
 }

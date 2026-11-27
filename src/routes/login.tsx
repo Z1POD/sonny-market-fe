@@ -40,16 +40,16 @@ export const Route = createFileRoute("/login")({
       // straight into a page that immediately 403s with no recovery.
       await useAuthStore.getState().hydrate().catch(() => {});
       if (useAuthStore.getState().status === "authenticated") {
-        throw redirect({ ...(parseHref(search.redirect || "/designs") as any) });
+        throw redirect({ ...(parseHref(search.redirect || "/marketplace") as any) });
       }
     }
   },
   head: () => ({
     meta: [
-      { title: "Sign in — M I M O Creator" },
+      { title: "Sign in — M I M O" },
       {
         name: "description",
-        content: "Sign in to your M I M O creator account.",
+        content: "Sign in to your M I M O account.",
       },
     ],
   }),
@@ -59,5 +59,5 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const { redirect: redirectTo } = Route.useSearch();
   // LoginCard is a full-screen surface that shares the splash design.
-  return <LoginCard redirectTo={redirectTo || "/designs"} />;
+  return <LoginCard redirectTo={redirectTo || "/marketplace"} />;
 }

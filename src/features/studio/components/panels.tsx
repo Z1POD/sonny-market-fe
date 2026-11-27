@@ -25,7 +25,6 @@ import {
   X,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { appToast as toast } from "@/lib/toaster";
 import { deleteOwnUpload, uploadArtworkFile } from "../api";
@@ -287,7 +286,7 @@ export function TextPanel() {
   const layer = selected?.kind === "text" ? selected : null;
   const editor = useStudio((s) => s.product!.editor);
 
-  // Policy: no new text on this product.
+  // Policy: no new text on this product. An existing (grandfathered) text layer can still be edited.
   if (!layer && !textAllowed) return <p className="py-8 text-center text-sm text-muted-foreground">Text isn't available on this product.</p>;
 
   if (!layer) {
@@ -423,25 +422,7 @@ export function ColorPanel({ compact = false }: { compact?: boolean }) {
         </div>
       </Section>
       <BackgroundSection />
-      <VisibilitySection />
     </div>
-  );
-}
-
-/** Listing visibility: private products are unlisted after approval and only reachable through their share link. */
-function VisibilitySection() {
-  const isPrivate = useStudio((s) => s.isPrivate);
-  const setPrivate = useStudio((s) => s.setPrivate);
-  return (
-    <Section title="Visibility">
-      <div className="flex items-center justify-between gap-3 rounded-[14px] border border-border p-3">
-        <div className="min-w-0">
-          <p className="text-[13px] font-medium text-foreground">Private (share link only)</p>
-          <p className="text-[11px] text-muted-foreground">Not shown in the market or search. Anyone with your link can view and order it. Changing this later means copying the design.</p>
-        </div>
-        <Switch checked={isPrivate} onCheckedChange={setPrivate} />
-      </div>
-    </Section>
   );
 }
 

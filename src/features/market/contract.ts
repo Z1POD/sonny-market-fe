@@ -27,12 +27,14 @@ export interface RawOwner {
 }
 
 export interface RawPublishedListItem {
+  /** Not in the contract yet; honoured when the backend adds it (either spelling). */
+  is_limited_edition?: boolean;
+  edition_size?: number | null;
   id: string;
   slug: string;
   title: string;
   description: string;
   /** Primary mockup (card thumbnail). */
-  thumbnail_url: string | null;
   mockup_url: string | null;
   /** Lowest price a buyer can pay ("From"). */
   price: RawMoney | null;
@@ -109,8 +111,9 @@ export interface RawBlankListItem {
   fit_style: string;
   brand?: { id: string; name: string; slug: string } | null;
   categories: { id: string; name: string; slug: string; path: string }[];
-  thumbnail_url: string | null;
   mockup_url: string | null;
+  /** Lighter image for lists/grids; preferred for the blank product image. */
+  thumbnail_url?: string | null;
   currency_code: string;
   is_active?: boolean;
   created_at: string;
@@ -138,16 +141,17 @@ export function mapPublishedListItem(r: RawPublishedListItem): ProductListItem {
     id: r.id,
     title: r.title,
     slug: r.slug,
-    thumbnail_url: r.thumbnail_url ?? "",
+    thumbnail_url: r.mockup_url ?? "",
     mockup_url: r.mockup_url,
     retail_price: r.price?.amount ?? "0",
     currency: r.price ? currencyOfMoney(r.price) : { code: "", symbol: "", decimal_places: 2 },
     store: { name: r.owner?.display_name || "Creator", slug: String(r.owner?.id ?? "") },
-    // The contract has no ratings or limited editions; zero values keep those badges hidden.
+    // The contract has no ratings; zero keeps that badge hidden. Limited edition shows only when the backend flags it.
     rating: 0,
     review_count: 0,
     sold_quantity: r.sold_quantity ?? 0,
-    is_limited_edition: false,
+    is_limited_edition: !!r.is_limited_edition,
+    edition_size: r.edition_size ?? null,
     // Only "sold out" is surfaced on cards; exact counts are a detail-page matter.
     available_quantity: r.in_stock === false ? 0 : null,
     created_at: r.published_at,
@@ -162,8 +166,8 @@ export function mapBlankListItem(r: RawBlankListItem): ProductListItem {
     id: r.id,
     title: r.name,
     slug: r.slug,
-    thumbnail_url: r.thumbnail_url ?? "",
-    mockup_url: r.mockup_url,
+    thumbnail_url: r.thumbnail_url || r.mockup_url || "",
+    mockup_url: r.thumbnail_url || r.mockup_url,
     retail_price: "",
     currency: { code: r.currency_code, symbol: r.currency_code },
     store: { name: r.brand?.name ?? "Blank", slug: r.brand?.slug ?? "" },
@@ -278,6 +282,8 @@ export function mapPublishedDetail(r: RawPublishedDetail): ProductDetail {
     published_product_id: r.id,
     blank_slug: r.design.blank_product_slug,
     allows_customization_on_top: r.allows_customization_on_top ?? false,
+    is_limited_edition: !!r.is_limited_edition,
+    edition_size: r.edition_size ?? null,
   };
 }
 

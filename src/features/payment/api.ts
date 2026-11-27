@@ -43,8 +43,8 @@ export interface PaymentMethod {
   display: Record<string, string>;
 }
 
-/** verified · pending_review (manual review) · failed / rejected (→ order payment_failed) · initiated · receipt_submitted */
-export type AttemptStatus = "initiated" | "receipt_submitted" | "verified" | "pending_review" | "failed" | "rejected" | (string & {});
+/** Contract §3.2: pending_review (manual review) · verified · rejected · expired. */
+export type AttemptStatus = "pending_review" | "verified" | "rejected" | "expired" | (string & {});
 
 export interface PaymentAttempt {
   id: string;
@@ -88,8 +88,8 @@ interface RawAttempt {
   amount: string;
   receipt_identifier?: string;
   payer_account?: string;
-  receipt_asset: unknown;
-  verification_message: string;
+  receipt_asset?: unknown;
+  verification_message?: string;
 }
 
 const mapMethod = (m: RawMethod): PaymentMethod => ({
@@ -128,8 +128,8 @@ const mapAttempt = (a: RawAttempt): PaymentAttempt => ({
   amount: a.amount,
   receiptIdentifier: a.receipt_identifier ?? "",
   payerAccount: a.payer_account ?? "",
-  hasReceipt: a.receipt_asset != null,
-  verificationMessage: a.verification_message,
+  hasReceipt: a.receipt_asset != null && a.receipt_asset !== "",
+  verificationMessage: a.verification_message ?? "",
 });
 
 export const paymentApi = {

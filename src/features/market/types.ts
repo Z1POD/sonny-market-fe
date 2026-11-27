@@ -19,7 +19,7 @@ export interface ProductListItem {
   id: string;
   title: string;
   slug: string;
-  thumbnail_url?: string | null;
+  thumbnail_url: string;
   mockup_url?: string | null;
   retail_price: string;
   currency: Currency;
@@ -28,6 +28,8 @@ export interface ProductListItem {
   review_count: number;
   sold_quantity: number;
   is_limited_edition: boolean;
+  /** Total copies in a limited edition (null/absent = unspecified). */
+  edition_size?: number | null;
   created_at: string;
   /** "blank" = unprinted base the buyer customizes (no detail page, card goes straight to the studio). */
   available_quantity?: number | null;

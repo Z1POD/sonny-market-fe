@@ -1,72 +1,60 @@
-# M I M O — Creator Studio App
+# M I M O — Buyer App
 
-Catalog-first workspace for creators/designers on the POD platform. This is the
-**creator** half of the former single app; the buyer app is a separate project
-(same backend, same user accounts).
+Marketplace-first storefront for the POD platform. This is the **buyer** half of
+the former single app; the creator/designer app is a separate project.
 
 Stack: TanStack Start (SSR) · React 19 · Zustand · TanStack Query · React Three Fiber · Tailwind 4.
 
-## Creator journey (routes)
+## Buyer journey (routes)
 
 | Step | Route | Notes |
 |------|-------|-------|
-| 1. Blank catalog | `/catalog` | pick a blank (Tee, Hoodie, Cap, Polo…) |
-| 2. 3D studio | `/studio` | upload artwork/logos, position & layer. **Save & Continue** saves a draft + mockups |
-| 3. Publish & review | `/designs` (modal opens automatically after the studio save) | set markup (live price), enable variants/sizes, limited edition, publish |
-| 4. Dashboard | `/store`, `/wallet`, `/analytics` | revenue & sales, pending vs available balance, payout requests |
+| Marketplace | `/marketplace` | public |
+| Product detail | `/product/$slug`, `/p/$slug` | public · 3D preview, colour/size, **Add to bag**, **Customize** |
+| 3D studio | `/studio` | signed-in · opens the *blank* of the chosen product · "Continue" saves + opens checkout |
+| Checkout | `/checkout` (+ overlay from cart/studio) | variant/qty → pickup/delivery → review & quote → payment |
+| Payment & tracking | checkout payment step, `/orders` | bank / mobile money, receipt upload, order status |
 | Auth | `/login`, Telegram auto-login | |
 
-`/designs` also lists drafts / published / archived designs, and lets you
-re-open any design in the studio (`productId` router state) or in the review modal.
-
-Removed vs. the old app: marketplace, product pages, cart, checkout, payment,
-orders (these belong to the buyer app).
+Removed vs. the old app: catalog, designs, store/dashboard, wallet, analytics
+(these belong to the creator app).
 
 ## Run
 
 ```bash
-cp .env.example .env
-npm install            # .npmrc sets legacy-peer-deps (needed by current TanStack peer ranges)
-npm run dev            # http://localhost:3000
+cp .env.example .env     # set VITE_API_BASE_URL etc.
+npm install              # .npmrc sets legacy-peer-deps (needed by current TanStack peer ranges)
+npm run dev              # http://localhost:3000
 npm run build && node .output/server/index.mjs
 ```
 
 `VITE_*` variables are read at **build** time.
 
-## Role model (important)
+## Backend contract this app relies on
 
-The frontend no longer has any role logic. Everyone is a buyer by default; the
-backend adds the creator/designer **membership** automatically when someone
-uses this app. `src/shared/hooks/use-store-access.ts` is the single gate:
-signed-in users may price/publish unless the backend explicitly returns
-`is_verified: false`. Saving in the studio never changes a role.
+* Same endpoints as before (`/market/*`, `/studio/*`, `/store/products/create|{id}|{id}/assets`,
+  `/store/artworks/`, checkout & orders endpoints).
+* **Customize button:** `GET /market/p/<slug>/` must expose the id or slug of the
+  underlying blank as `apparel_info.id` (or `apparel_info.slug`, or flat
+  `base_apparel_id`). If none is present the button is simply hidden.
+* Saving a customisation in the studio must NOT change the user's role
+  (that is the backend fix you described).
+* Studio saves create the item once per studio session and then `PATCH` it, so
+  going back from checkout and editing does not create duplicates.
 
-## What changed from the original
+## Cross-app link
 
-* Studio "Continue" no longer opens checkout: it saves (create once, then update
-  in-session), uploads mockups, and navigates to `/designs` with
-  `{ reviewProductId }` router state, which opens `EditProductModal`.
-* Designs list / detail: the buyer-style "Order Now" actions became
-  "Details" / "Review & publish".
-* Navigation: Catalog · Designs · Dashboard · Earnings (+ Analytics in account menu).
-* Default landing page is `/catalog`.
-* Optional `VITE_BUYER_APP_URL` adds an "Open the marketplace" link.
+Set `VITE_CREATOR_APP_URL` to show "Start selling your designs" in the account menu.
 
-## Keeping the studio in sync with the buyer app
+## Keeping the studio in sync with the creator app
 
-Studio code lives in `src/features/studio` (identical paths in both repos).
-Creator-specific differences: the save creates a listing draft (`purpose:"listing"`, `client.app:"creator-studio"`) and hands off to the review modal on `/designs`; re-opening a design uses `?design=<id>`. Keep the rest identical so diffs line up. 
+Studio code lives in `src/features/studio` (identical paths in both repos so
+patches port cleanly). Buyer-specific differences: `hooks/useStudioInit.ts`
+(blank-only entry) and `hooks/useStudioCheckout.ts` (draft id kept per session).
+`src/features/store/api.ts` is a trimmed subset here (create/update/assets/detail).
 
 ## Known pre-existing issues (not introduced by the split)
 
-`npx tsc --noEmit` reports 32 type errors inherited from the original code.
-The production build is unaffected. Compared with the original project there
-are zero new ones.
-
-## Money endpoints (API Contract v1 — money wave)
-
-- Totals come only from `POST /orders/checkout/validate/` (`tax_amount`, `platform_fee_amount`, `total_amount` = subtotal + tax + platform fee + shipping − discount). Never hardcode tax/fee. Order objects carry `platform_fee_amount`.
-- Payment attempt statuses: `pending_review | verified | rejected | expired`. Buyer `PaymentSheet` (features/payment) wraps the panel; while create-attempt + verify run, `PaymentVerifyingOverlay` blocks the whole UI (and Telegram back) until the response arrives.
-- Escrow (buyer): `GET /escrow/orders/{id}/`, `POST …/confirm-receipt/`, `POST …/dispute/` — shown in the order sheet; the UI displays `inspection_due_at` from the server.
-- Wallet (creator / partner): transactions rows `{type, entry_type, amount, …}` with `{count,page,page_size,results}` paging; withdrawals `requested|reserved|approved|paid|rejected|cancelled`; request sends an `idempotency_key`; fee is platform-configured, so the UI shows the server's `fee_amount`/`net_amount`; error codes `method_not_verified`, `below_minimum_withdrawal`, `above_maximum_withdrawal`, `above_daily_limit`, `insufficient_balance`, `invalid_transition`.
-- Auth header stays `Authorization: Token <token>` (the contract text says `Bearer` — confirm with the backend).
+`npx tsc --noEmit` reports 49 type errors inherited from the original code
+(mostly snake_case vs camelCase typings in `features/checkout`). The production
+build is unaffected. Compared with the original project there are zero new ones.

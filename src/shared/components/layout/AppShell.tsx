@@ -1,18 +1,40 @@
 "use client";
-import { useCallback, useEffect } from "react";
-import { useLocation, useRouter } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef } from "react";
+import { isPaymentBlocked } from "@/features/payment/blockStore";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { useCheckoutStore } from "@/features/checkout/store";
 import type { ReactNode } from "react";
 import { useTelegram } from "@/shared/hooks/use-telegram";
 import { cn } from "@/lib/utils";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
+import { CartDrawer } from "@/features/market/components/CartDrawer";
+import { SearchSheet } from "@/features/market/components/SearchSheet";
 import { useTheme, applyThemeClass } from "@/shared/stores/theme-store";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const router = useRouter();
   const isStudio = location.pathname.startsWith("/studio");
-  const isMinimal = isStudio;
+  const isProductDetail = location.pathname.startsWith("/product/") || location.pathname.startsWith("/p/");
+  const isCheckoutPage = location.pathname.startsWith("/checkout");
+  const isOrderPage = location.pathname.startsWith("/order/");
+  // Studio, product, checkout and order pages draw their own top bar and have no bottom nav.
+  const isMinimal = isStudio || isProductDetail || isCheckoutPage || isOrderPage;
+  const navigate = useNavigate();
+
+  // Checkout is a page: starting it from anywhere (studio, cart) navigates there, and leaving the page clears it.
+  const checkoutOpen = useCheckoutStore((s) => s.isOpen);
+  const resetCheckout = useCheckoutStore((s) => s.reset);
+  useEffect(() => {
+    if (checkoutOpen && !location.pathname.startsWith("/checkout")) navigate({ to: "/checkout" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutOpen]);
+  const prevPath = useRef(location.pathname);
+  useEffect(() => {
+    if (prevPath.current.startsWith("/checkout") && !location.pathname.startsWith("/checkout")) resetCheckout();
+    prevPath.current = location.pathname;
+  }, [location.pathname, resetCheckout]);
 
   const {
     tg,
@@ -36,10 +58,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [isTelegram, isStudio, disableVerticalSwipes, enableVerticalSwipes]);
 
   const handleBack = useCallback(() => {
+    if (isPaymentBlocked()) return; // a payment request is in flight
     // The studio asks before discarding unsaved work.
-    if (location.pathname.startsWith("/studio")) window.dispatchEvent(new Event("studio:request-back"));
+    if (isStudio) window.dispatchEvent(new Event("studio:request-back"));
+    else if (isCheckoutPage) window.dispatchEvent(new Event("checkout:request-back"));
     else router.history.back();
-  }, [router, location.pathname]);
+  }, [router, isStudio, isCheckoutPage]);
 
   useEffect(() => {
     if (!tg?.BackButton) return;
@@ -67,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     root.style.setProperty("--tg-safe-area-bottom", `${bottom}px`);
   }, [isFullscreen, safeAreaInset, contentSafeAreaInset]);
 
-  const applySafeAreaTop = isTelegram && isFullscreen && !isStudio;
+  const applySafeAreaTop = isTelegram && isFullscreen && !isStudio && !isProductDetail;
 
   return (
     <div
@@ -82,6 +106,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
 
       {!isMinimal && <BottomNav />}
+
+      <SearchSheet />
+      <CartDrawer />
     </div>
   );
 }

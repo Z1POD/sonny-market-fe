@@ -1,6 +1,6 @@
 // src/features/checkout/components/StepReview.tsx
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ShoppingBag,
@@ -130,10 +130,14 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [orderItems.length, JSON.stringify(orderItems.map((i) => [i.designId, i.variantId, i.quantity])), shippingAddress, fulfillmentType, selectedVendorCode, selectedPickupId, shippingOptions, cities],
   );
+  const [payCourier, setPayCourier] = useState(false);
+  const codAllowed = fulfillmentType === "delivery" && !!shippingOptions?.delivery.find((d) => d.vendorCode === selectedVendorCode)?.codAvailable;
+  const cod = payCourier && codAllowed;
+  const finalBody = useMemo(() => (body && cod ? { ...body, delivery_fee_mode: "cod" as const } : body), [body, cod]);
   const quoteQ = useQuery({
-    queryKey: ["checkout-quote", body],
-    queryFn: async () => checkoutApi.validate({ ...body!, currency_id: await resolveCurrencyId() }),
-    enabled: !!body,
+    queryKey: ["checkout-quote", finalBody],
+    queryFn: async () => checkoutApi.validate({ ...finalBody!, currency_id: await resolveCurrencyId() }, { symbol: currencySymbol }),
+    enabled: !!finalBody,
     staleTime: 30_000,
     retry: false,
   });
@@ -152,11 +156,11 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
     setFieldErrors({});
 
     try {
-      if (!body) throw new Error("Choose a delivery option first");
+      if (!finalBody) throw new Error("Choose a delivery option first");
       // Same request → same key (safe retries); a changed request gets a fresh key.
-      const sig = JSON.stringify(body);
+      const sig = JSON.stringify(finalBody);
       if (idem.current.sig !== sig) idem.current = { sig, key: crypto.randomUUID() };
-      const order = await checkoutApi.createOrder({ ...body, currency_id: await resolveCurrencyId() }, idem.current.key);
+      const order = await checkoutApi.createOrder({ ...finalBody, currency_id: await resolveCurrencyId() }, idem.current.key);
 
       setOrder(order);
       if (isCartOrigin) clearCart();
@@ -331,19 +335,28 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
             <div className="flex justify-between text-muted-foreground">
               <span>Shipping</span>
               <span className="tabular-nums text-foreground">
-                {quoteQ.isLoading ? "…" : quote ? (parseFloat(quote.shipping) === 0 ? "Free" : money(quote.shipping)) : "—"}
+                {quoteQ.isLoading ? "…" : quote ? (quote.deliveryFeeMode === "cod" ? "Pay courier" : parseFloat(quote.shipping) === 0 ? "Free" : money(quote.shipping)) : "—"}
               </span>
             </div>
+            {codAllowed && (
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-xl bg-muted/40 p-3 text-xs">
+                <input type="checkbox" checked={payCourier} onChange={(e) => setPayCourier(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--gold,currentColor)]" />
+                <span>
+                  <span className="block font-medium text-foreground">Pay the courier on delivery</span>
+                  <span className="text-muted-foreground">The delivery fee is not charged now; you pay it in cash when your order arrives.</span>
+                </span>
+              </label>
+            )}
+            {quote?.deliveryFeeMode === "cod" && parseFloat(quote.deliveryFeeDue) > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Due to courier on delivery</span>
+                <span className="tabular-nums text-foreground">{money(quote.deliveryFeeDue)}</span>
+              </div>
+            )}
             {quote && parseFloat(quote.discount) > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Discount</span>
                 <span className="tabular-nums text-green-600">-{money(quote.discount)}</span>
-              </div>
-            )}
-            {quote && parseFloat(quote.tax) > 0 && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Tax</span>
-                <span className="tabular-nums text-foreground">{money(quote.tax)}</span>
               </div>
             )}
             {quoteError && (

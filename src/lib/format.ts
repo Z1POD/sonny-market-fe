@@ -1,25 +1,18 @@
 // src/lib/format.ts
 
-/** Anything carrying display info for a currency (contract: `symbol`, `decimal_places`). */
-export interface CurrencyLike {
-  code?: string;
-  symbol?: string;
-  decimal_places?: number;
-}
+import type { Currency } from "@/shared/api/types";
 
 /**
- * Formats a server amount for display. Uses the currency's own fraction digits (default 2) — never rounds to
- * whole units — and a space between an alphabetic symbol/code and the number ("ETB 450.00"), none for "$".
+ * Renders a server-provided amount with the server-provided symbol and decimal places.
+ * Display only — money is never computed client-side.
  */
-export const formatPrice = (amount: number | string | null | undefined, currency?: CurrencyLike | string | null) => {
-  const n = typeof amount === "string" ? parseFloat(amount) : (amount ?? NaN);
-  const cur: CurrencyLike = typeof currency === "string" ? { symbol: currency } : (currency ?? {});
-  const sym = cur.symbol || cur.code || "";
-  if (!Number.isFinite(n)) return "—";
-  const digits = cur.decimal_places ?? 2;
-  const num = n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  if (!sym) return num;
-  return /[A-Za-z]$/.test(sym) ? `${sym} ${num}` : `${sym}${num}`;
+export const formatPrice = (amount: number | string | null | undefined, currency?: Currency) => {
+  const n = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (n == null || Number.isNaN(n)) return "—";
+  const sym = currency?.symbol ?? currency?.code ?? "";
+  const d = currency?.decimal_places ?? 0;
+  const formatted = n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+  return sym === "$" ? `${sym}${formatted}` : `${sym} ${formatted}`.trim();
 };
 
 export const formatDate = (iso: string) =>
@@ -28,3 +21,8 @@ export const formatDate = (iso: string) =>
     day: "numeric",
     year: "numeric",
   });
+
+
+
+export const formatDateTime = (iso: string) =>
+  new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });

@@ -29,7 +29,6 @@ export function prepareProductModel(source: THREE.Object3D, config: ModelAsset) 
   });
   const names = config.printableMeshNodes ?? (config.meshNode ? [config.meshNode] : null);
   const printable = meshes.filter((mesh) => !names || names.includes(mesh.name));
-  console.log("[ MODEL DEtail ]", {meshes})
   if (printable.length === 0) throw new Error("This product has no configured printable meshes");
   return { scene, meshes, printable, materials };
 }

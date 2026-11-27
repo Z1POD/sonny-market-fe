@@ -5,6 +5,7 @@
 //  · In a browser: registered users sign in with a one-time code sent to their Telegram.
 
 "use client";
+import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { getMiniAppUrl } from "../lib/miniapp";
 import { useTelegramAutoLogin } from "../hooks/useTelegramAutoLogin";
@@ -14,11 +15,10 @@ import { ghostClass, pillClass, SplashLayout } from "./SplashLayout";
 const inputClass =
   "h-14 w-full rounded-full bg-neutral-100 px-5 text-center text-base text-[#111] outline-none ring-0 placeholder:text-neutral-400 focus:bg-neutral-50 focus:shadow-[0_0_0_2px_rgba(0,0,0,0.25)] disabled:opacity-50";
 
-export function LoginCard({ redirectTo = "/designs" }: { redirectTo?: string }) {
+export function LoginCard({ redirectTo = "/marketplace" }: { redirectTo?: string }) {
   const { tgLoading } = useTelegramAutoLogin({ redirectTo });
   const otp = useOtpLogin(redirectTo);
   const miniAppUrl = getMiniAppUrl();
-  const buyerUrl = (import.meta.env.VITE_BUYER_APP_URL as string | undefined) || null;
 
   if (tgLoading) {
     return (
@@ -140,7 +140,7 @@ export function LoginCard({ redirectTo = "/designs" }: { redirectTo?: string }) 
       </form>
 
       <p className="mx-auto mt-3 max-w-[20rem] text-xs leading-snug text-neutral-500">
-        Only registered accounts can sign in here. New creator? Open the app in Telegram first to create your account.
+        Only registered accounts can sign in here. New to M I M O? Open the app in Telegram first.
       </p>
 
       {miniAppUrl && (
@@ -148,11 +148,9 @@ export function LoginCard({ redirectTo = "/designs" }: { redirectTo?: string }) 
           Open in Telegram instead
         </a>
       )}
-      {buyerUrl && (
-        <a href={buyerUrl} target="_blank" rel="noopener noreferrer" className={ghostClass.replace("mt-2", miniAppUrl ? "mt-0" : "mt-2")}>
-          Open the marketplace
-        </a>
-      )}
+      <Link to="/marketplace" className={ghostClass.replace("mt-2", miniAppUrl ? "mt-0" : "mt-2")}>
+        Continue browsing
+      </Link>
     </SplashLayout>
   );
 }

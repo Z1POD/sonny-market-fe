@@ -50,9 +50,6 @@ interface StudioState {
   setBgColor: (c: string | null) => void;
   /** Design persisted earlier in this session: re-saving updates it instead of creating a duplicate. */
   designId: string | null;
-  /** Listing visibility sent on save (private = share-link only after approval). */
-  isPrivate: boolean;
-  setPrivate: (v: boolean) => void;
   setDesignId: (id: string | null) => void;
 
   load: (p: ProductConfig, opts?: { colorId?: string }) => void;
@@ -106,8 +103,6 @@ export const useStudio = create<StudioState>((set, get) => ({
   setBgColor: (bgColor) => set({ bgColor }),
   designId: null,
   setDesignId: (designId) => set({ designId }),
-  isPrivate: false,
-  setPrivate: (isPrivate) => set({ isPrivate }),
 
   load: (p, opts) => {
     const preferred = opts?.colorId ? p.colors.find((c) => c.id === opts.colorId && c.inStock) : undefined;

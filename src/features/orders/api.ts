@@ -25,6 +25,9 @@ export interface OrderItem {
   unit_price: string;
   subtotal: string;
   mockup_url: string;
+  /** What the line was created from — used to re-order. */
+  design_id?: string;
+  variant_id?: string | null;
 }
 
 /** Contract statuses, in lifecycle order (plus the off-path ones). */
@@ -40,7 +43,10 @@ export type OrderStatus =
   | "cancelled"
   | "fulfillment_exception"
   | "refunded"
-  | "disputed";
+  | "disputed"
+  | "in_transit"
+  | "completed"
+  | "expired";
 
 /** Derived from the order status (the contract exposes payment progress through attempts). */
 export type PaymentStatus = "pending" | "pending_verification" | "paid" | "failed";
@@ -58,6 +64,9 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   fulfillment_exception: "Fulfillment issue",
   refunded: "Refunded",
   disputed: "Under dispute",
+  in_transit: "In transit",
+  completed: "Completed",
+  expired: "Expired",
 };
 
 /** Statuses from which `POST /orders/{id}/cancel/` is accepted. */
@@ -68,6 +77,9 @@ export const CANCELLABLE: OrderStatus[] = [
   "sent_to_printer",
   "payment_failed",
   "fulfillment_exception",
+  "in_production",
+  "handed_over",
+  "in_transit",
 ];
 
 /** Statuses where the order is still moving on its own after payment, so polling is worthwhile. */
@@ -113,7 +125,7 @@ export interface OrderDetail {
   status: OrderStatus;
   payment_status: PaymentStatus;
   delivery_type: "delivery" | "pickup";
-  pricing: { subtotal: string; shipping_cost: string; discount: string; total: string; currency: OrderCurrency };
+  pricing: { subtotal: string; shipping_cost: string; discount: string; delivery_fee_mode: "prepaid" | "cod"; delivery_fee_due: string; total: string; currency: OrderCurrency };
   shipping: OrderShipping;
   items: OrderItem[];
   item_count: number;
@@ -146,6 +158,8 @@ interface RawOrder extends RawOrderSummary {
   currency_symbol_snapshot: string;
   currency_decimal_places_snapshot: number;
   subtotal_amount: string;
+  delivery_fee_mode?: "prepaid" | "cod";
+  delivery_fee_due?: string;
   shipping_amount: string;
   discount_amount: string;
   shipping_full_name: string;
@@ -161,6 +175,8 @@ interface RawOrder extends RawOrderSummary {
   updated_at?: string;
   items: {
     id: string;
+    design_id?: string;
+    variant_id?: string | null;
     title: string;
     /** Contract v2: { scene_graph, variant, print_method, mockups: [{label,url,is_primary}] } */
     snapshot_data?: {
@@ -180,6 +196,7 @@ export function paymentStatusOf(s: OrderStatus): PaymentStatus {
   switch (s) {
     case "pending_payment":
     case "cancelled":
+    case "expired":
       return "pending";
     case "payment_failed":
       return "failed";
@@ -234,6 +251,8 @@ export function mapOrderDetail(r: RawOrder): OrderDetail {
       subtotal: r.subtotal_amount,
       shipping_cost: r.shipping_amount,
       discount: r.discount_amount,
+      delivery_fee_mode: r.delivery_fee_mode ?? "prepaid",
+      delivery_fee_due: r.delivery_fee_due ?? "0.00",
       total: r.total_amount,
       currency: { code: r.currency_code_snapshot, symbol: sym(r), decimal_places: r.currency_decimal_places_snapshot },
     },
@@ -262,6 +281,8 @@ export function mapOrderDetail(r: RawOrder): OrderDetail {
       unit_price: i.unit_price,
       subtotal: i.line_total,
       mockup_url: (i.snapshot_data?.mockups?.find((m) => m.is_primary) ?? i.snapshot_data?.mockups?.[0])?.url ?? "",
+      ...(i.design_id ? { design_id: i.design_id } : {}),
+      ...(i.variant_id !== undefined ? { variant_id: i.variant_id } : {}),
     })),
     item_count: r.items?.length ?? r.item_count ?? 0,
     customer_note: r.notes ?? "",

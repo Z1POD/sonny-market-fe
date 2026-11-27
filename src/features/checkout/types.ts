@@ -96,6 +96,8 @@ export interface DeliveryOption {
   currency: string;
   estimatedDays: string;
   isFree: boolean;
+  /** Offer cash-on-delivery only when the option allows it. */
+  codAvailable?: boolean;
 }
 
 export interface PickupLocation {
@@ -183,8 +185,14 @@ export interface CheckoutQuote {
   subtotal: string;
   shipping: string;
   tax: string;
+  /** Platform fee charged to the buyer at checkout (never hardcode — it is admin-configurable). */
+  platformFee: string;
+  deliveryFeeMode: "prepaid" | "cod";
+  /** Paid to the courier on delivery (cod); not part of `total`. */
+  deliveryFeeDue: string;
   discount: string;
   total: string;
+  coupon: { code: string; discount: string; status: string } | null;
   lines: Array<{ designId: string; variantId: string; quantity: number; unitPrice: string; lineTotal: string }>;
 }
 
