@@ -64,7 +64,7 @@ export function Header({ variant = "full" }: HeaderProps) {
           isExpanded
             ? "h-auto max-w-[calc(100%-2rem)] md:max-w-[600px] flex-col gap-4 py-4"
             : isMinimal
-              ? "h-10 max-w-[150px] justify-center md:h-12"
+              ? "h-10 max-w-[170px] justify-center md:h-12"
               : "h-10 max-w-[190px] justify-between md:h-16 md:max-w-7xl",
         )}
       >

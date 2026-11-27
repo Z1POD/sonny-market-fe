@@ -176,16 +176,17 @@ export function ProductCard({ product, size = "default", page }: Props) {
           <p className="text-sm font-semibold tabular-nums">
             {formatPrice(product.retail_price, product.currency)}
           </p>
-          <button
+          
+        </div>
+        <button
             type="button"
             onClick={quickAdd}
             disabled={adding || soldOut}
             aria-label={`Add ${product.title} to bag`}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gold text-gold-foreground shadow-sm transition-transform active:scale-90 disabled:opacity-40"
+            className="grid shrink-0 place-items-center text-foreground shadow-sm transition-transform  hover:bg-gold hover:apple-shadow rounded active:scale-90 disabled:opacity-40"
           >
-            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          </button>
-        </div>
+            {adding ? <Loader2 className="h-6 w-6 animate-spin" /> : <Plus className="h-6 w-6" />}
+        </button>
       </div>
     </Link>
   );

@@ -16,6 +16,7 @@ import {
   Move,
   RotateCcw,
   Shirt,
+  ArrowRight,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { appToast as toast } from "@/lib/toaster";
@@ -160,7 +161,11 @@ function ContinueButton({ onSave }: { onSave: () => void }) {
       disabled={saving}
       className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
     >
-      {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+      {saving ? 
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      :
+        <ArrowRight className="h-3.5 w-3.5" />
+      }
       {saving ? "Saving" : "Continue"}
     </button>
   );
@@ -637,6 +642,8 @@ export function StudioPage() {
               detail={canvasError}
               onRetry={() => window.location.reload()}
               retryLabel="Reload studio"
+              secondaryLabel="Go Back"
+              onSecondary={goBack}
             />
           )}
           {dragging && !saveStep && (
