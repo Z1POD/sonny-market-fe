@@ -125,7 +125,7 @@ export function ProfilePage() {
   };
 
   if (!user) {
-    return <div className="flex h-[60dvh] items-center justify-center"><BrandLoader size="md" /></div>;
+    return <div className="flex h-[60dvh] items-center justify-center"><BrandLoader dotColor="bg-primary" size="md"/></div>;
   }
 
   const via = { telegram: "Telegram", otp: "a one-time code", password: "password", admin: "admin" }[user.auth_method as string];

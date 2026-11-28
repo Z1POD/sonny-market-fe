@@ -42,6 +42,7 @@ export function StudioOverlay({ tone = "busy", title, detail, steps, onRetry, re
           <p className={cn("font-semibold text-foreground", tone === "error" ? "text-base" : "text-sm")}>{title}</p>
           {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
         </div>
+        {tone === "busy" && steps && steps.length > 0 && <SaveProgress steps={steps} />}
         {steps && steps.length > 0 && (
           <ul className="mt-1 w-full space-y-1.5 text-left">
             {steps.map((s) => (
@@ -69,6 +70,21 @@ export function StudioOverlay({ tone = "busy", title, detail, steps, onRetry, re
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Road-style progress: the filled part covers finished steps plus half of the active one, so it keeps moving. */
+function SaveProgress({ steps }: { steps: OverlayStep[] }) {
+  const done = steps.filter((s) => s.state === "done").length;
+  const active = steps.some((s) => s.state === "active") ? 0.5 : 0;
+  const pct = Math.min(100, Math.round(((done + active) / steps.length) * 100));
+  return (
+    <div className="mt-1 w-full">
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out" style={{ width: `${Math.max(pct, 4)}%` }} />
+      </div>
+      <p className="mt-1.5 text-[11px] tabular-nums text-muted-foreground">{pct}%</p>
     </div>
   );
 }

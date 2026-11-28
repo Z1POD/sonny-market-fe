@@ -196,7 +196,7 @@ function TopBar({ onSave, onBack }: { onSave: () => void; onBack: () => void }) 
 function DockHeader({ onSave }: { onSave: () => void }) {
   const product = useStudio((s) => s.product!);
   return (
-    <div className="flex items-center justify-between gap-3 px-1.5 pb-2.5 pt-0.5">
+    <div className="flex items-center justify-between gap-3 px-1.5 pb-1.5 pt-0.5">
       <p className="min-w-0 truncate pl-1 text-[13px] font-semibold tracking-tight text-foreground">{product.name}</p>
       <div className="flex shrink-0 items-center gap-1">
         <ThemeToggle />
@@ -211,7 +211,7 @@ function ToolRail({ flat = false }: { flat?: boolean }) {
   const setPanel = useStudio((s) => s.setPanel);
   const current = panel ? TOOL_GROUP[panel] : null;
   return (
-    <nav className={cn("pointer-events-auto flex gap-1 md:flex-col", flat ? "justify-between bg-background rounded-[28px] border border-border" : "glass rounded-[22px] border border-border p-1.5 shadow-glass")}>
+    <nav className={cn("pointer-events-auto flex gap-1 md:flex-col", flat ? "justify-between" : "glass rounded-[22px] border border-border p-1.5 shadow-glass")}>
       {TOOLS.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -613,7 +613,7 @@ export function StudioPage() {
             <>
               {isMobile ? (
                 <div ref={dockRef} className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+1.25rem)]">
-                  <div className="glass pointer-events-auto w-full max-w-md rounded-[28px] border border-border p-2 shadow-glass">
+                  <div className="pointer-events-auto w-full max-w-md rounded-[28px] border border-border bg-background p-2 shadow-glass">
                     {!panel && <DockHeader onSave={handleSave} />}
                     <ToolRail flat />
                   </div>

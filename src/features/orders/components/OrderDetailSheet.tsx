@@ -177,7 +177,7 @@ export function OrderDetailSheet({
           <div className="flex-1 overflow-y-auto px-5 pb-8 no-scrollbar">
             {isLoading || !order ? (
               <div className="flex items-center justify-center py-20">
-                <BrandLoader size="md" />
+                <BrandLoader dotColor="bg-primary" size="md"/>
               </div>
             ) : (
               <OrderDetailContent

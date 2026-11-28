@@ -170,7 +170,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
       <div className="px-4 pt-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
-            <BrandLoader size="md" />
+            <BrandLoader dotColor="bg-primary" size="md"/>
           </div>
         ) : !order ? (
           <div className="space-y-3 py-20 text-center">

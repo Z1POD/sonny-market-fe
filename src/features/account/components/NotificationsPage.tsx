@@ -24,9 +24,22 @@ const TABS = [
   { label: "In-app", value: "in_app" },
 ];
 
+/** Backend messages carry <b> tags; render them as plain text. */
+function stripHtml(input: string): string {
+  return (input ?? "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
 function Row({ n, onRead }: { n: AppNotification; onRead: (id: string) => void }) {
   const unread = n.unread ?? !n.read_at;
-  const [first = "", ...rest] = n.message.split("\n");
+  const [first = "", ...rest] = stripHtml(n.message).split("\n");
   const body = rest.join("\n").trim();
   const inner = (
     <>
@@ -109,7 +122,7 @@ export function NotificationsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><BrandLoader size="md" /></div>
+        <div className="flex justify-center py-20"><BrandLoader dotColor="bg-primary" size="md"/></div>
       ) : error ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <AlertCircle className="h-8 w-8 text-destructive/60" />

@@ -38,7 +38,7 @@ export function ProductDetailPage({
   if (isLoading) {
     return (
       <div className="flex h-[60dvh] items-center justify-center">
-        <BrandLoader size="md" />
+        <BrandLoader dotColor="bg-primary" size="md"/>
       </div>
     );
   }

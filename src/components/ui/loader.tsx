@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 interface BrandLoaderProps {
   size?: "sm" | "md" | "lg";
   className?: string;
+  dotColor?: string;
 }
 
 const sizes = {
@@ -14,6 +15,7 @@ const sizes = {
 export function BrandLoader({
   size = "md",
   className,
+  dotColor = "bg-white/90",
 }: BrandLoaderProps) {
   const [dot, gap] = sizes[size].split(" gap-");
 
@@ -31,7 +33,7 @@ export function BrandLoader({
           className={cn(
             dot,
             "rounded-full animate-brand-loader",
-            i === 0 ? "bg-[#857134]" : i === 1 ? "bg-white/90" : "bg-[#2A8C72]" 
+            i === 0 ? "bg-[#857134]" : i === 1 ? dotColor : "bg-[#2A8C72]",
           )}
           style={{
             animationDelay: `${delay}ms`,

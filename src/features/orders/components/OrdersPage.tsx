@@ -196,7 +196,7 @@ export function OrdersPage() {
       <div className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <BrandLoader size="md" />
+            <BrandLoader dotColor="bg-primary" size="md"/>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
