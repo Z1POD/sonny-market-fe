@@ -69,6 +69,11 @@ export const accountApi = {
 
   notifications: (params: { page?: number; page_size?: number; status?: string; channel?: string }) =>
     api.get<Page<AppNotification>>("/notifications/", { params }),
+  /** `GET /notifications/unread-count/` → `{count}`. */
+  unreadCount: async () => (await api.get<{ count: number }>("/notifications/unread-count/")).count,
+  markRead: (id: string) => api.post<unknown>(`/notifications/${id}/read/`, { body: {} }),
+  /** `204`. */
+  markAllRead: () => api.post<null>("/notifications/read-all/", { body: {} }),
   prefs: () => api.get<NotificationPrefs>("/notifications/preferences/"),
   updatePrefs: (patch: Partial<NotificationPrefs>) => api.patch<NotificationPrefs>("/notifications/preferences/", { body: patch }),
 };

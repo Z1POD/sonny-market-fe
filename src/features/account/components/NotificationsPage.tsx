@@ -5,13 +5,15 @@
 "use client";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Bell, ChevronDown, Loader2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLoader } from "@/components/ui/loader";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { notificationsInfiniteQuery } from "../queries";
+import { accountApi } from "../api";
+import { useUnreadNotifications } from "../useUnreadNotifications";
 import { NotificationPrefsCard } from "./NotificationPrefsCard";
 import type { AppNotification } from "../api";
 
@@ -22,7 +24,7 @@ const TABS = [
   { label: "In-app", value: "in_app" },
 ];
 
-function Row({ n }: { n: AppNotification }) {
+function Row({ n, onRead }: { n: AppNotification; onRead: (id: string) => void }) {
   const unread = n.unread ?? !n.read_at;
   const [first = "", ...rest] = n.message.split("\n");
   const body = rest.join("\n").trim();
@@ -45,11 +47,11 @@ function Row({ n }: { n: AppNotification }) {
   );
   const cls = cn("flex gap-3 rounded-2xl border bg-surface p-3.5", unread ? "border-gold/40" : "border-border");
   return n.metadata?.order_id ? (
-    <Link to="/order/$orderId" params={{ orderId: n.metadata.order_id }} className={cn(cls, "transition-colors hover:border-gold/50")}>
+    <Link to="/order/$orderId" params={{ orderId: n.metadata.order_id }} onClick={() => unread && onRead(n.id)} className={cn(cls, "transition-colors hover:border-gold/50")}>
       {inner}
     </Link>
   ) : (
-    <div className={cls}>{inner}</div>
+    <div className={cn(cls, unread && "cursor-pointer")} onClick={() => unread && onRead(n.id)}>{inner}</div>
   );
 }
 
@@ -60,15 +62,27 @@ export function NotificationsPage() {
     notificationsInfiniteQuery(channel ? { channel } : {}),
   );
   const items = data?.pages.flatMap((p) => p.results) ?? [];
+  const qc = useQueryClient();
+  const unreadCount = useUnreadNotifications();
+  const refresh = () => qc.invalidateQueries({ queryKey: ["account", "notifications"] });
+  const readOne = useMutation({ mutationFn: (id: string) => accountApi.markRead(id), onSuccess: refresh });
+  const readAll = useMutation({ mutationFn: () => accountApi.markAllRead(), onSuccess: refresh });
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pb-28 pt-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight">Notifications</h1>
+        <div className="flex items-center gap-1">
+        {unreadCount > 0 && (
+          <Button variant="ghost" size="sm" className="rounded-full text-xs" disabled={readAll.isPending} onClick={() => readAll.mutate()}>
+            Mark all read
+          </Button>
+        )}
         <Button variant="ghost" size="sm" className="rounded-full text-xs" onClick={() => setShowPrefs((v) => !v)} aria-expanded={showPrefs}>
           <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Preferences
           <ChevronDown className={cn("ml-1 h-3.5 w-3.5 transition-transform", showPrefs && "rotate-180")} />
         </Button>
+        </div>
       </div>
 
       {showPrefs && (
@@ -110,7 +124,7 @@ export function NotificationsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
-          {items.map((n) => <Row key={n.id} n={n} />)}
+          {items.map((n) => <Row key={n.id} n={n} onRead={(id) => readOne.mutate(id)} />)}
           {hasNextPage && (
             <Button variant="outline" size="sm" className="mx-auto mt-2 rounded-full" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
               {isFetchingNextPage ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading…</> : "Load more"}

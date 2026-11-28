@@ -22,7 +22,6 @@ import { ApiError } from "@/shared/api/client";
 import { useCheckoutStore } from "@/features/checkout/store";
 import { useAuthStore } from "@/features/auth/store";
 import { useTelegram } from "@/shared/hooks/use-telegram";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isTelegramMiniApp } from "@/shared/hooks/use-telegram";
@@ -197,7 +196,7 @@ function TopBar({ onSave, onBack }: { onSave: () => void; onBack: () => void }) 
 function DockHeader({ onSave }: { onSave: () => void }) {
   const product = useStudio((s) => s.product!);
   return (
-    <div className="flex items-center justify-between gap-3 px-1.5 pb-1.5 pt-0.5">
+    <div className="flex items-center justify-between gap-3 px-1.5 pb-2.5 pt-0.5">
       <p className="min-w-0 truncate pl-1 text-[13px] font-semibold tracking-tight text-foreground">{product.name}</p>
       <div className="flex shrink-0 items-center gap-1">
         <ThemeToggle />
@@ -212,7 +211,7 @@ function ToolRail({ flat = false }: { flat?: boolean }) {
   const setPanel = useStudio((s) => s.setPanel);
   const current = panel ? TOOL_GROUP[panel] : null;
   return (
-    <nav className={cn("pointer-events-auto flex gap-1 md:flex-col", flat ? "justify-between" : "glass rounded-[22px] border border-border p-1.5 shadow-glass")}>
+    <nav className={cn("pointer-events-auto flex gap-1 md:flex-col", flat ? "justify-between bg-background rounded-[28px] border border-border" : "glass rounded-[22px] border border-border p-1.5 shadow-glass")}>
       {TOOLS.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -254,28 +253,28 @@ function DesktopPanel() {
   );
 }
 
-/** A floating sheet that sits above the tool dock (Apple-style), so the tabs stay visible and tappable. */
+/** A floating sheet that sits just above the tool dock (plain fixed layer: no drawer, so the dock stays usable). */
 function MobilePanel({ dockHeight }: { dockHeight: number }) {
   const panel = useStudio((s) => s.panel);
   const setPanel = useStudio((s) => s.setPanel);
+  if (!panel || panel === "adjust") return null;
   return (
-    <Drawer modal={false} open={!!panel && panel !== "adjust"} onOpenChange={(o) => !o && setPanel(null)} shouldScaleBackground={false}>
-      <DrawerContent
-        className="inset-x-3 mx-auto max-w-md rounded-[28px] border-border bg-background shadow-glass"
-        style={{ bottom: dockHeight + 10, maxHeight: `calc(100dvh - ${dockHeight}px - 7rem)` }}
-      >
-        {panel && panel !== "adjust" && (
-          <>
-            <div className="flex items-center justify-between px-5 pb-1 pt-3">
-              <DrawerTitle className="text-[17px] font-semibold tracking-tight">{PANEL_TITLES[panel]}</DrawerTitle>
-            </div>
-            <div className="no-scrollbar overflow-y-auto px-5 pb-6 pt-3">
-              <PanelBody panel={panel} />
-            </div>
-          </>
-        )}
-      </DrawerContent>
-    </Drawer>
+    <section
+      key={panel}
+      aria-label={PANEL_TITLES[panel]}
+      className="animate-studio-rise pointer-events-auto absolute inset-x-4 z-20 mx-auto flex max-w-md flex-col overflow-hidden rounded-[28px] border border-border bg-background shadow-glass"
+      style={{ bottom: dockHeight + 8, maxHeight: `calc(100dvh - ${dockHeight}px - 7rem)` }}
+    >
+      <div className="flex shrink-0 items-center justify-between px-5 pb-1 pt-4">
+        <h2 className="text-[17px] font-semibold tracking-tight">{PANEL_TITLES[panel]}</h2>
+        <button aria-label="Close panel" onClick={() => setPanel(null)} className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-2">
+        <PanelBody panel={panel} />
+      </div>
+    </section>
   );
 }
 
@@ -615,7 +614,7 @@ export function StudioPage() {
               {isMobile ? (
                 <div ref={dockRef} className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+1.25rem)]">
                   <div className="glass pointer-events-auto w-full max-w-md rounded-[28px] border border-border p-2 shadow-glass">
-                    <DockHeader onSave={handleSave} />
+                    {!panel && <DockHeader onSave={handleSave} />}
                     <ToolRail flat />
                   </div>
                 </div>

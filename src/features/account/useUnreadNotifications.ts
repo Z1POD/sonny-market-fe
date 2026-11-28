@@ -1,24 +1,22 @@
 // src/features/account/useUnreadNotifications.ts
 //
-// Unread notification count for the badge / dot. Reads the newest page of `GET /notifications/` and counts the
-// items the server flags `unread` (so it saturates at the page size — shown as "9+").
+// Unread notification count for the badge / dot: `GET /notifications/unread-count/`.
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/store";
 import { accountApi } from "./api";
 
-const PAGE = 50;
+export const unreadCountKey = ["account", "notifications", "unread-count"] as const;
 
 export function useUnreadNotifications(): number {
   const user = useAuthStore((s) => s.user);
   const { data } = useQuery({
-    queryKey: ["account", "notifications", "unread-count"],
-    queryFn: () => accountApi.notifications({ page: 1, page_size: PAGE }),
+    queryKey: unreadCountKey,
+    queryFn: accountApi.unreadCount,
     enabled: !!user,
     staleTime: 30_000,
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
-    select: (page) => page.results.filter((n) => n.unread ?? !n.read_at).length,
   });
   return data ?? 0;
 }
