@@ -5,7 +5,7 @@ import { useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, X } from "lucide-react";
-import { useTelegram } from "@/shared/hooks/use-telegram";
+import { isTelegramMiniApp, useTelegram } from "@/shared/hooks/use-telegram";
 import { useCheckoutStore } from "../store";
 import { StepVariantQuantity } from "./StepVariantQuantity";
 import { StepShipping } from "./StepShipping";
@@ -93,6 +93,7 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
 
   const handleClose = leave;
 
+  const inTelegram = isTelegramMiniApp();
   const currentStepIdx = STEPS.findIndex((s) => s.id === step);
 
   if (!isOpen) return null;
@@ -106,11 +107,12 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
     >
       <header
         className={cn(
-          "flex items-center gap-3 border-b border-border bg-surface/80 px-4 py-3 backdrop-blur-xl",
-          
+          "flex items-center gap-3 px-4 py-3",
+          inTelegram ? "justify-center text-center" : "border-b border-border bg-surface/80 backdrop-blur-xl",
         )}
       >
-        {isFirstStep ? (
+        {/* Inside Telegram the native Back button handles stepping back / leaving, so the arrow is dropped. */}
+        {inTelegram ? null : isFirstStep ? (
           <button
             onClick={handleClose}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors hover:bg-muted"
@@ -128,7 +130,7 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
           </button>
         ) : null}
 
-        <div className="min-w-0 flex-1">
+        <div className={cn("min-w-0", !inTelegram && "flex-1")}>
           <h1 className="truncate text-base font-semibold leading-tight">
             {productName || (isCartOrigin ? "Your bag" : "Checkout")}
           </h1>

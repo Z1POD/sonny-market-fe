@@ -3,7 +3,7 @@
 
 import { UserAvatar } from "@/shared/components/UserAvatar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, ShoppingBag, Search, Store as StoreIcon, User as UserIcon } from "lucide-react";
+import { ShoppingBag, Search, Store as StoreIcon, User as UserIcon } from "lucide-react";
 import { useAuthStore } from "@/features/auth/store";
 import { useCart } from "@/features/market/store";
 import { useSearchSheet } from "@/features/market/searchStore";
@@ -11,10 +11,7 @@ import { cn } from "@/lib/utils";
 import { UserMenu } from "./UserMenu";
 
 
-const MARKET = { to: "/marketplace", label: "Market", icon: StoreIcon } as const;
-const NOTIFICATIONS = { to: "/notifications", label: "Notifications", icon: Bell } as const;
-
-function NavLink({ to, label, icon: Icon, pathname }: { to: string; label: string; icon: typeof Bell; pathname: string }) {
+function NavLink({ to, label, icon: Icon, pathname }: { to: string; label: string; icon: typeof StoreIcon; pathname: string }) {
   const active = pathname.startsWith(to);
   return (
     <Link
@@ -22,11 +19,11 @@ function NavLink({ to, label, icon: Icon, pathname }: { to: string; label: strin
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex min-h-[44px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium",
+        "flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium",
         active ? "text-primary" : "text-muted-foreground",
       )}
     >
-      <Icon className="h-5 w-5" />
+      <Icon className="h-6 w-6" />
     </Link>
   );
 }
@@ -41,43 +38,41 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="sticky bottom-2 z-30 mx-auto w-[60%] rounded-2xl border border-border glass-strong shadow-2xl backdrop-blur-xl safe-bottom md:hidden"
+      className="sticky bottom-2 z-30 mx-auto w-[78%] rounded-2xl border border-border glass-strong shadow-2xl backdrop-blur-xl safe-bottom md:hidden"
     >
-      <div className="mx-auto grid max-w-md grid-cols-5">
-        <NavLink {...MARKET} pathname={pathname} />
-
+      <div className="mx-auto grid max-w-md grid-cols-4">
         <button
           onClick={() => openSearch(true)}
           aria-label="Search"
-          className="flex min-h-[44px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium text-muted-foreground"
+          className="flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium text-muted-foreground"
         >
-          <Search className="h-5 w-5" />
+          <Search className="h-6 w-6" />
         </button>
+
+        <NavLink to="/marketplace" label="Market" icon={StoreIcon} pathname={pathname} />
 
         <button
           onClick={openCart}
           aria-label="Open cart"
-          className="relative flex min-h-[44px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium text-muted-foreground"
+          className="relative flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium text-muted-foreground"
         >
-          <ShoppingBag className="h-5 w-5" />
+          <ShoppingBag className="h-6 w-6" />
           {/* Cart */}
           {cartCount > 0 && (
-            <span className="absolute right-[26%] top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-bold text-primary-foreground">
+            <span className="absolute right-[24%] top-2 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-bold text-primary-foreground">
               {cartCount}
             </span>
           )}
         </button>
 
-        <NavLink {...NOTIFICATIONS} pathname={pathname} />
-
         <UserMenu
           anchor="tab"
-          className="flex min-h-[44px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium text-muted-foreground"
+          className="flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium text-muted-foreground"
         >
           {user ? (
-            <UserAvatar user={user} className="h-8 w-8 text-[10px]" />
+            <UserAvatar user={user} className="h-9 w-9 text-[11px]" />
           ) : (
-            <UserIcon className="h-5 w-5" />
+            <UserIcon className="h-6 w-6" />
           )}
         </UserMenu>
       </div>

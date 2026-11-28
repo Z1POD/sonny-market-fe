@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_authenticated")({
 const steps = [
   { icon: Shirt, label: "Pick" },
   { icon: Palette, label: "Customize" },
-  { icon: ShoppingBag, label: "Sell / Order" },
+  { icon: ShoppingBag, label: "Order" },
 ];
 
 function AuthenticatedLayout() {
@@ -61,7 +61,12 @@ function AuthenticatedLayout() {
     return (
       <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-[#0a3a30] via-[#06241e] to-[#031411] px-4 text-white select-none">
         {/* Center Loader */}
-        <div className="relative z-10 my-auto flex flex-col items-center">
+        <div className="relative z-10 my-auto flex flex-col items-center gap-3">
+          <img
+            src="/apple-touch-icon.png"
+            alt="App logo"
+            className="h-14 w-14 rounded-2xl object-contain"
+          />
           <BrandLoader size="md" />
         </div>
 

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { orderDetailQuery, orderKeys } from "../queries";
 import { ordersApi } from "../api";
 import type { OrderDetail } from "../api";
+import { isTelegramMiniApp } from "@/shared/hooks/use-telegram";
 import { useConfirm } from "@/shared/components/ConfirmModal";
 import { BrandLoader } from "@/components/ui/loader";
 
@@ -140,6 +141,7 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
     }
   };
 
+  const inTelegram = isTelegramMiniApp();
   const goBack = () => {
     if (router.history.canGoBack()) router.history.back();
     else navigate({ to: "/orders" });
@@ -147,15 +149,23 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-[640px] pb-24 pt-[calc(var(--tg-safe-area-top,0px)+4rem)]">
-      <header className="sticky top-[calc(var(--tg-safe-area-top,0px)+4rem)] z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-xl">
-        <button onClick={goBack} aria-label="Back" className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-muted">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <div className="min-w-0">
+      {inTelegram ? (
+        // Telegram provides the Back button: just a centred title at the top of the page.
+        <header className="px-4 pb-1 pt-2 text-center">
           <p className="text-[11px] text-muted-foreground">Order</p>
           <h1 className="truncate text-base font-semibold leading-tight">{order?.order_number ?? "—"}</h1>
-        </div>
-      </header>
+        </header>
+      ) : (
+        <header className="sticky top-[calc(var(--tg-safe-area-top,0px)+4rem)] z-20 flex items-center gap-3 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-xl">
+          <button onClick={goBack} aria-label="Back" className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-muted">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground">Order</p>
+            <h1 className="truncate text-base font-semibold leading-tight">{order?.order_number ?? "—"}</h1>
+          </div>
+        </header>
+      )}
 
       <div className="px-4 pt-4">
         {isLoading ? (

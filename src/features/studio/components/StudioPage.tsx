@@ -15,9 +15,7 @@ import {
   Check,
   Move,
   RotateCcw,
-  Shirt,
-  ArrowRight,
-} from "lucide-react";
+  Shirt, ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { appToast as toast } from "@/lib/toaster";
 import { ApiError } from "@/shared/api/client";
@@ -27,6 +25,7 @@ import { useTelegram } from "@/shared/hooks/use-telegram";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isTelegramMiniApp } from "@/shared/hooks/use-telegram";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/shared/stores/theme-store";
 import { useConfirm } from "@/shared/components/ConfirmModal";
@@ -55,11 +54,11 @@ const SAVE_STEPS: { id: NonNullable<ReturnType<typeof useStudio.getState>["saveS
 type SheetPanel = Exclude<PanelId, null | "adjust">;
 
 const TOOLS: { id: Exclude<PanelId, null>; label: string; icon: typeof Type }[] = [
-  { id: "adjust", label: "Adjust", icon: Move },
   { id: "artwork", label: "Add", icon: Sparkles },
   { id: "color", label: "Color", icon: Palette },
+  { id: "zones", label: "Zone", icon: Shirt },
   { id: "layers", label: "Layers", icon: LayersIcon },
-  { id: "zones", label: "Zones", icon: Shirt },
+  { id: "adjust", label: "Adjust", icon: Move },
 ];
 
 /** Merged tools: one rail button covers related panels. */
@@ -161,12 +160,9 @@ function ContinueButton({ onSave }: { onSave: () => void }) {
       disabled={saving}
       className="flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
     >
-      {saving ? 
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      :
-        <ArrowRight className="h-3.5 w-3.5" />
-      }
+      {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       {saving ? "Saving" : "Continue"}
+      {!saving && <ArrowRight className="h-4 w-4" />}
     </button>
   );
 }
@@ -174,15 +170,19 @@ function ContinueButton({ onSave }: { onSave: () => void }) {
 /** Top of the studio: [back + edit/preview] centred; the product title, theme and Continue flank it on larger screens. */
 function TopBar({ onSave, onBack }: { onSave: () => void; onBack: () => void }) {
   const product = useStudio((s) => s.product!);
+  // Inside the Telegram mini app the native back button is shown, so ours is hidden.
+  const inTelegram = isTelegramMiniApp();
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-start gap-3 p-3 pt-5 safe-top sm:p-5 sm:pt-7">
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-start gap-3 px-3 pt-[calc(var(--tg-safe-area-top,0px)+env(safe-area-inset-top)+2.25rem)] sm:px-5 sm:pt-[calc(var(--tg-safe-area-top,0px)+2rem)]">
       <div className="glass pointer-events-auto hidden h-12 items-center justify-self-start rounded-full border border-border px-5 shadow-glass md:flex">
         <p className="text-[14px] font-semibold tracking-tight text-foreground">{product.name}</p>
       </div>
       <div className="glass pointer-events-auto col-start-2 flex h-12 items-center gap-1 rounded-full border border-border pl-1.5 pr-1.5 shadow-glass">
-        <button aria-label="Back" onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-muted">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
+        {!inTelegram && (
+          <button aria-label="Back" onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-muted">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
         <ModeSwitch />
       </div>
       <div className="glass pointer-events-auto col-start-3 hidden h-12 items-center gap-1 justify-self-end rounded-full border border-border p-1.5 shadow-glass md:flex">
@@ -219,13 +219,13 @@ function ToolRail({ flat = false }: { flat?: boolean }) {
           onClick={() => setPanel(current === id ? null : id)}
           aria-pressed={current === id}
           className={cn(
-            "group flex h-14 flex-col items-center justify-center gap-1 rounded-[16px] transition-all duration-200 md:h-[60px] md:w-[60px]",
+            "group flex h-[68px] flex-col items-center justify-center gap-1.5 rounded-[18px] transition-all duration-200 md:h-[60px] md:w-[60px]",
             flat ? "flex-1" : "w-14",
             current === id ? "bg-primary text-primary-foreground shadow-elevated" : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
-          <Icon className="h-[19px] w-[19px]" strokeWidth={1.8} />
-          <span className="text-[10px] font-medium leading-none">{label.split(" ")[0]}</span>
+          <Icon className="h-6 w-6 md:h-[19px] md:w-[19px]" strokeWidth={1.8} />
+          <span className="text-[11px] font-medium leading-none">{label.split(" ")[0]}</span>
         </button>
       ))}
     </nav>
@@ -254,18 +254,22 @@ function DesktopPanel() {
   );
 }
 
-function MobilePanel() {
+/** A floating sheet that sits above the tool dock (Apple-style), so the tabs stay visible and tappable. */
+function MobilePanel({ dockHeight }: { dockHeight: number }) {
   const panel = useStudio((s) => s.panel);
   const setPanel = useStudio((s) => s.setPanel);
   return (
-    <Drawer open={!!panel && panel !== "adjust"} onOpenChange={(o) => !o && setPanel(null)} shouldScaleBackground={false}>
-      <DrawerContent className="max-h-[50vh] border-border bg-background">
+    <Drawer modal={false} open={!!panel && panel !== "adjust"} onOpenChange={(o) => !o && setPanel(null)} shouldScaleBackground={false}>
+      <DrawerContent
+        className="inset-x-3 mx-auto max-w-md rounded-[28px] border-border bg-background shadow-glass"
+        style={{ bottom: dockHeight + 10, maxHeight: `calc(100dvh - ${dockHeight}px - 7rem)` }}
+      >
         {panel && panel !== "adjust" && (
           <>
             <div className="flex items-center justify-between px-5 pb-1 pt-3">
               <DrawerTitle className="text-[17px] font-semibold tracking-tight">{PANEL_TITLES[panel]}</DrawerTitle>
             </div>
-            <div className="no-scrollbar overflow-y-auto px-5 pb-8 pt-3 safe-bottom">
+            <div className="no-scrollbar overflow-y-auto px-5 pb-6 pt-3">
               <PanelBody panel={panel} />
             </div>
           </>
@@ -395,6 +399,17 @@ export function StudioPage() {
   const canvasError = useStudio((s) => s.canvasError);
   const saveIndex = SAVE_STEPS.findIndex((st) => st.id === saveStep);
   const isMobile = useIsMobile();
+  // Height of the floating tool dock, so the panel sheet can float right above it.
+  const dockRef = useRef<HTMLDivElement>(null);
+  const [dockHeight, setDockHeight] = useState(150);
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setDockHeight(el.offsetHeight));
+    ro.observe(el);
+    setDockHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  });
   const [captures, setCaptures] = useState<MockupCapture[]>([]);
   const [result, setResult] = useState<SaveDesignResult | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
@@ -598,8 +613,8 @@ export function StudioPage() {
           {mode === "edit" ? (
             <>
               {isMobile ? (
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center p-3 safe-bottom">
-                  <div className="glass pointer-events-auto w-full max-w-md rounded-[26px] border border-border p-1.5 shadow-glass">
+                <div ref={dockRef} className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+1.25rem)]">
+                  <div className="glass pointer-events-auto w-full max-w-md rounded-[28px] border border-border p-2 shadow-glass">
                     <DockHeader onSave={handleSave} />
                     <ToolRail flat />
                   </div>
@@ -609,11 +624,11 @@ export function StudioPage() {
                   <ToolRail />
                 </div>
               )}
-              {isMobile ? <MobilePanel /> : <DesktopPanel />}
+              {isMobile ? <MobilePanel dockHeight={dockHeight} /> : <DesktopPanel />}
               {panel === "adjust" && <AdjustSheet />}
             </>
           ) : (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 p-3 safe-bottom sm:p-5">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+1.25rem)] sm:px-5">
               {isMobile && (
                 <div className="glass pointer-events-auto w-full max-w-md rounded-[22px] border border-border p-1.5 shadow-glass">
                   <DockHeader onSave={handleSave} />
@@ -642,8 +657,6 @@ export function StudioPage() {
               detail={canvasError}
               onRetry={() => window.location.reload()}
               retryLabel="Reload studio"
-              secondaryLabel="Go Back"
-              onSecondary={goBack}
             />
           )}
           {dragging && !saveStep && (

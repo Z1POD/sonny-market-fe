@@ -62,15 +62,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     // The studio asks before discarding unsaved work.
     if (isStudio) window.dispatchEvent(new Event("studio:request-back"));
     else if (isCheckoutPage) window.dispatchEvent(new Event("checkout:request-back"));
-    else router.history.back();
-  }, [router, isStudio, isCheckoutPage]);
+    else if (router.history.canGoBack()) router.history.back();
+    else navigate({ to: isOrderPage ? "/orders" : "/marketplace" }); // opened from a notification / deep link
+  }, [router, navigate, isStudio, isCheckoutPage, isOrderPage]);
 
   useEffect(() => {
     if (!tg?.BackButton) return;
 
     const canGoBack = router.history.canGoBack();
+    // These pages drop their own back arrow inside Telegram, so Telegram's Back button must always be there.
+    const ownsBack = isStudio || isCheckoutPage || isOrderPage;
 
-    if (isFullscreen && canGoBack) {
+    if (isTelegram && (canGoBack || ownsBack)) {
       tg.BackButton.show();
       tg.BackButton.onClick(handleBack);
     } else {
@@ -78,7 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
 
     return () => tg.BackButton.offClick(handleBack);
-  }, [tg, isFullscreen, handleBack, router, location.pathname]);
+  }, [tg, isTelegram, isStudio, isCheckoutPage, isOrderPage, handleBack, router, location.pathname]);
 
   useEffect(() => {
     const root = document.documentElement;

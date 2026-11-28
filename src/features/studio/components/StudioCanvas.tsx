@@ -12,6 +12,9 @@ import { DEFAULT_STUDIO_BACKGROUND } from "../contract";
 import { CanvasErrorBoundary } from "./CanvasErrorBoundary";
 import { Shirt } from "./ProductModel";
 
+/** Every saved mockup is this many pixels square, on any device. */
+const CAPTURE_SIZE = 1200;
+
 function Rig() {
   const product = useStudio((s) => s.product)!;
   const mode = useStudio((s) => s.mode);
@@ -75,6 +78,16 @@ function Rig() {
       // The canvas is transparent (the page behind it carries the colour), so mockups are composited on the chosen background.
       const background = useStudio.getState().bgColor ?? product.background ?? DEFAULT_STUDIO_BACKGROUND;
       const out = [];
+      // Always render to the same square frame, whatever the screen: a portrait phone viewport would otherwise
+      // crop the model sideways. Pixel ratio 1 keeps the output size identical on every device.
+      const prevSize = gl.getSize(new THREE.Vector2());
+      const prevRatio = gl.getPixelRatio();
+      const persp = camera as THREE.PerspectiveCamera;
+      const prevAspect = persp.aspect;
+      gl.setPixelRatio(1);
+      gl.setSize(CAPTURE_SIZE, CAPTURE_SIZE, false);
+      persp.aspect = 1;
+      persp.updateProjectionMatrix();
       for (const { angle, position: pos } of requests) {
         camera.position.set(...pos);
         camera.lookAt(target);
@@ -83,6 +96,10 @@ function Rig() {
         out.push({ angle, dataUrl: withBackground(gl.domElement, background) });
         await new Promise((r) => setTimeout(r, 16));
       }
+      gl.setPixelRatio(prevRatio);
+      gl.setSize(prevSize.x, prevSize.y, false);
+      persp.aspect = prevAspect;
+      persp.updateProjectionMatrix();
       guides.forEach((g) => (g.visible = true));
       camera.position.copy(saved);
       if (controls.current) controls.current.autoRotate = autoRotate;

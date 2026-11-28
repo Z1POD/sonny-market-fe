@@ -9,6 +9,7 @@ import { Bell, LogOut, Receipt, Store as StoreIcon, User as UserIcon } from "luc
 import { useAuthStore } from "@/features/auth/store";
 import { useTelegram } from "@/shared/hooks/use-telegram";
 import { cn } from "@/lib/utils";
+import { formatBadge, useUnreadNotifications } from "@/features/account/useUnreadNotifications";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // Always shown, for every signed-in user.
@@ -32,6 +33,7 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
   const logout = useAuthStore((s) => s.logout);
 
   const { isTelegram } = useTelegram();
+  const unread = useUnreadNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -69,9 +71,12 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
         aria-label="Account"
         aria-haspopup="menu"
         aria-expanded={open}
-        className={className}
+        className={cn("relative", className)}
       >
         {children}
+        {user && unread > 0 && (
+          <span aria-label={`${unread} unread notifications`} className="absolute right-[24%] top-1 h-2.5 w-2.5 rounded-full bg-gold ring-2 ring-background" />
+        )}
       </button>
 
       <AnimatePresence>
@@ -114,6 +119,11 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {label}
+                  {to === "/notifications" && unread > 0 && (
+                    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-gold-foreground">
+                      {formatBadge(unread)}
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>

@@ -38,6 +38,9 @@ export interface AppNotification {
   status: string;
   created_at: string;
   sent_at: string | null;
+  /** Set once the buyer has seen it; `unread` is the server's flag for the badge. */
+  read_at?: string | null;
+  unread?: boolean;
 }
 
 export interface NotificationPrefs {

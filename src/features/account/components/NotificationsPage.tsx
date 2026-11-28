@@ -23,6 +23,7 @@ const TABS = [
 ];
 
 function Row({ n }: { n: AppNotification }) {
+  const unread = n.unread ?? !n.read_at;
   const [first = "", ...rest] = n.message.split("\n");
   const body = rest.join("\n").trim();
   const inner = (
@@ -32,7 +33,7 @@ function Row({ n }: { n: AppNotification }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-medium">{first || n.event_type}</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium">{unread && <span className="h-2 w-2 shrink-0 rounded-full bg-gold" aria-label="Unread" />}{first || n.event_type}</p>
           <time className="shrink-0 text-[11px] text-muted-foreground" dateTime={n.created_at}>
             {formatDateTime(n.created_at)}
           </time>
@@ -42,7 +43,7 @@ function Row({ n }: { n: AppNotification }) {
       </div>
     </>
   );
-  const cls = "flex gap-3 rounded-2xl border border-border bg-surface p-3.5";
+  const cls = cn("flex gap-3 rounded-2xl border bg-surface p-3.5", unread ? "border-gold/40" : "border-border");
   return n.metadata?.order_id ? (
     <Link to="/order/$orderId" params={{ orderId: n.metadata.order_id }} className={cn(cls, "transition-colors hover:border-gold/50")}>
       {inner}
