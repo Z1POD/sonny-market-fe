@@ -99,7 +99,7 @@ export function NotificationsPage() {
       </div>
 
       {showPrefs && (
-        <div className="rounded-2xl border border-border bg-surface px-4 py-1">
+        <div className="rounded-3xl border border-border/60 bg-card shadow-sm px-4 py-1">
           <NotificationPrefsCard />
         </div>
       )}

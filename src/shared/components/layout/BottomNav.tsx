@@ -20,7 +20,7 @@ function NavLink({ to, label, icon: Icon, pathname }: { to: string; label: strin
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium",
-        active ? "text-primary" : "text-muted-foreground",
+        active ? "text-primary-ink" : "text-muted-foreground",
       )}
     >
       <Icon className="h-6 w-6" />

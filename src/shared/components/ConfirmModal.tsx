@@ -72,7 +72,7 @@ function ConfirmBody({ opts, resolve }: ConfirmBodyProps) {
         {opts.danger ? (
           <AlertTriangle className="h-6 w-6 text-red-500" />
         ) : (
-          <Info className="h-6 w-6 text-primary" />
+          <Info className="h-6 w-6 text-primary-ink" />
         )}
       </div>
 

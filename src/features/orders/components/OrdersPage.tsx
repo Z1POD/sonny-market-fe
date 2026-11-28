@@ -17,7 +17,6 @@ import {
   LoaderIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ordersInfiniteQuery } from "../queries";
 import { ORDER_STATUS_LABEL, type OrderListItem, type OrderStatus } from "../api";
 import { BrandLoader } from "@/components/ui/loader";
@@ -53,16 +52,16 @@ function statusIcon(status: OrderStatus) {
   }
 }
 
-function statusVariant(status: OrderStatus): "default" | "secondary" | "destructive" | "outline" {
+function tone(status: OrderStatus): string {
   switch (status) {
     case "completed":
-    case "delivered": return "default";
+    case "delivered": return "bg-accent text-accent-foreground";
     case "cancelled":
     case "payment_failed":
     case "fulfillment_exception":
-    case "disputed": return "destructive";
-    case "pending_payment": return "outline";
-    default: return "secondary";
+    case "disputed": return "bg-destructive/10 text-destructive";
+    case "pending_payment": return "bg-primary/15 text-primary-ink";
+    default: return "bg-muted text-foreground";
   }
 }
 
@@ -71,7 +70,7 @@ const statusLabel = (status: OrderStatus): string => ORDER_STATUS_LABEL[status] 
 function paymentBadge(paymentStatus: string) {
   if (paymentStatus === "paid") return null;
   if (paymentStatus === "pending_verification")
-    return <span className="text-[10px] text-amber-500 font-medium">Verifying payment</span>;
+    return <span className="text-[10px] text-primary-ink font-medium">Verifying payment</span>;
   if (paymentStatus === "pending")
     return <span className="text-[10px] text-muted-foreground">Awaiting payment</span>;
   if (paymentStatus === "failed")
@@ -97,41 +96,29 @@ function OrderCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       onClick={onClick}
-      className="w-full text-left flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:border-border/80 hover:bg-surface/80 active:scale-[0.99]"
+      className="w-full rounded-3xl border border-border/60 bg-card p-4 text-left shadow-sm transition active:scale-[0.99]"
     >
-      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted">
-        <Package className="h-6 w-6 text-muted-foreground/40" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold tracking-tight">{order.order_number}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            {" · "}
+            {order.item_count} {order.item_count === 1 ? "item" : "items"}
+          </p>
+        </div>
+        <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" />
       </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className="truncate text-sm font-medium">{order.order_number}</p>
-          <Badge variant={statusVariant(order.status)} className="shrink-0 gap-1 text-[10px]">
+      <div className="mt-3 flex items-end justify-between gap-3 border-t border-border/50 pt-3">
+        <div className="flex flex-col items-start gap-1">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${tone(order.status)}`}>
             {statusIcon(order.status)}
             {statusLabel(order.status)}
-          </Badge>
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {order.item_count} {order.item_count === 1 ? "item" : "items"}
-        </p>
-        <div className="mt-1.5 flex items-center gap-2">
-          <span className="text-sm font-semibold">
-            {sym}{order.total}
           </span>
           {paymentBadge(order.payment_status)}
         </div>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
-          Placed{" "}
-          {new Date(order.created_at).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
+        <span className="text-lg font-semibold tabular-nums tracking-tight">{sym}{order.total}</span>
       </div>
-
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40" />
     </motion.button>
   );
 }
@@ -169,21 +156,17 @@ export function OrdersPage() {
   const allOrders = data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="mx-auto flex h-full w-full max-w-[640px] flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-border/60 bg-background/90 px-4 pb-0 pt-4 backdrop-blur">
-        <h1 className="mb-3 text-xl font-semibold tracking-tight">My Orders</h1>
-
-        {/* Status filter tabs */}
-        <div className="flex gap-1 overflow-x-auto pb-3 scrollbar-none">
+      <div className="sticky top-0 z-10 bg-background/85 pb-2 pt-5 backdrop-blur-xl">
+        <h1 className="px-4 text-[32px] font-semibold leading-none tracking-tight">Orders</h1>
+        <div className="mt-4 flex gap-2 overflow-x-auto px-4 pb-1 no-scrollbar" data-no-swipe>
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
-                activeTab === tab.value
-                  ? "bg-foreground text-background"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-medium transition active:scale-95 ${
+                activeTab === tab.value ? "bg-primary text-primary-foreground shadow-sm" : "bg-card text-muted-foreground ring-1 ring-border/60"
               }`}
             >
               {tab.label}
@@ -193,7 +176,7 @@ export function OrdersPage() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 pb-28 pt-3 no-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <BrandLoader dotColor="bg-primary" size="md"/>

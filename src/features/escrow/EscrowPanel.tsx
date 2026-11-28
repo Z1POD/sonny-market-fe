@@ -63,9 +63,9 @@ export function EscrowPanel({ orderId, money }: { orderId: string; money: (v: st
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+    <div className="space-y-3 rounded-3xl border border-border/60 bg-card shadow-sm p-4">
       <div className="flex items-start gap-3">
-        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">{copy.label}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{copy.hint}</p>

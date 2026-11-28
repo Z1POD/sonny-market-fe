@@ -26,7 +26,7 @@ import { NotificationPrefsCard } from "./NotificationPrefsCard";
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-4">
+    <section className="rounded-3xl border border-border/60 bg-card shadow-sm p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
         {action}
@@ -146,7 +146,7 @@ export function ProfilePage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 pb-28 pt-4">
       {/* Identity */}
-      <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-center gap-4 rounded-3xl border border-border/60 bg-card shadow-sm p-4">
         <UserAvatar user={user} className="h-14 w-14 text-lg" />
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold tracking-tight">{user.display_name}</h1>

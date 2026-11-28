@@ -47,7 +47,7 @@ export function StudioOverlay({ tone = "busy", title, detail, steps, onRetry, re
             {steps.map((s) => (
               <li key={s.label} className={cn("flex items-center gap-2 text-xs", s.state === "todo" ? "text-muted-foreground/60" : "text-foreground")}>
                 <span className="grid h-4 w-4 shrink-0 place-items-center">
-                  {s.state === "done" ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : s.state === "active" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
+                  {s.state === "done" ? <Check className="h-3.5 w-3.5 text-emerald" /> : s.state === "active" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />}
                 </span>
                 {s.label}
               </li>

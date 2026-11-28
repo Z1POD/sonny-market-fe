@@ -47,7 +47,7 @@ export function NotFoundPage() {
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             className="absolute -right-3 -top-3"
           >
-            <Sparkles className="h-5 w-5 text-primary/60" />
+            <Sparkles className="h-5 w-5 text-primary-ink/60" />
           </motion.div>
         </motion.div>
 

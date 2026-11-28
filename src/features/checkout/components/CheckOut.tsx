@@ -103,54 +103,35 @@ export function CheckOut({ mockupUrls: mockupUrlsProp }: CheckOutProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex h-dvh flex-col bg-background pt-[calc(var(--tg-safe-area-top,0px)+3.75rem)]"
+      className="flex h-dvh flex-col bg-background pt-[calc(var(--tg-safe-area-top,0px)+3.75rem)] md:pt-4"
     >
-      <header
-        className={cn(
-          "flex items-center gap-3 px-4 py-3",
-          inTelegram ? "justify-center text-center" : "border-b border-border bg-surface/80 backdrop-blur-xl",
-        )}
-      >
+      <header className={cn("px-4 pb-1 pt-2", inTelegram ? "text-center" : "flex items-center gap-2")}>
         {/* Inside Telegram the native Back button handles stepping back / leaving, so the arrow is dropped. */}
-        {inTelegram ? null : isFirstStep ? (
+        {inTelegram ? null : (
           <button
-            onClick={handleClose}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors hover:bg-muted"
-            aria-label="Close"
+            onClick={isFirstStep ? handleClose : step !== "payment" ? goBack : handleClose}
+            className="-ml-1.5 grid h-10 w-10 shrink-0 place-items-center rounded-full text-foreground transition active:scale-90 active:bg-muted"
+            aria-label={isFirstStep ? "Close" : "Go back"}
           >
-            <X className="h-5 w-5" />
+            {isFirstStep || step === "payment" ? <X className="h-5 w-5" /> : <ChevronLeft className="h-6 w-6" />}
           </button>
-        ) : step !== "payment" ? (
-          <button
-            onClick={goBack}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors hover:bg-muted"
-            aria-label="Go back"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-        ) : null}
-
-        <div className={cn("min-w-0", !inTelegram && "flex-1")}>
-          <h1 className="truncate text-base font-semibold leading-tight">
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {productName || (isCartOrigin ? "Your bag" : "Checkout")}
-          </h1>
-
-          <p className="text-[11px] text-muted-foreground">
-            Step {currentStepIdx + 1} of {STEPS.length}:{" "}
-            {STEPS[currentStepIdx]?.label}
           </p>
+          <h1 className="truncate text-[26px] font-semibold leading-tight tracking-tight">{STEPS[currentStepIdx]?.label}</h1>
         </div>
+        <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
+          {currentStepIdx + 1} / {STEPS.length}
+        </span>
       </header>
 
-      {/* Progress bar */}
-      <div className="flex items-center gap-1 px-4 py-2">
+      {/* Stepper */}
+      <div className="flex items-center gap-1.5 px-4 pb-3 pt-2" role="progressbar" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={currentStepIdx + 1}>
         {STEPS.map((s, i) => (
-          <div key={s.id} className="flex flex-1 items-center">
-            <div
-              className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                i <= currentStepIdx ? "bg-foreground" : "bg-border"
-              }`}
-            />
+          <div key={s.id} className="flex-1">
+            <div className={cn("h-1.5 rounded-full transition-all duration-500", i < currentStepIdx ? "bg-emerald" : i === currentStepIdx ? "bg-primary" : "bg-border")} />
           </div>
         ))}
       </div>

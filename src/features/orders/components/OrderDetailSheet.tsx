@@ -30,7 +30,7 @@ function statusColor(status: string) {
     case "sent_to_printer":
     case "in_production":
     case "in_transit":
-    case "handed_over": return "text-emerald-500";
+    case "handed_over": return "text-emerald";
     case "completed":
     case "delivered": return "text-blue-300";
     case "cancelled":
@@ -39,7 +39,7 @@ function statusColor(status: string) {
     case "refunded":
     case "disputed": return "text-destructive";
     case "pending_payment": return "text-muted-foreground";
-    default: return "text-amber-500";
+    default: return "text-primary-ink";
   }
 }
 
@@ -232,7 +232,7 @@ function OrderDetailContent({
   return (
     <div className="space-y-5">
       {/* Status banner */}
-      <div className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className="flex items-center justify-between rounded-3xl border border-border/60 bg-card shadow-sm px-4 py-3">
         <div>
           <p className="text-xs text-muted-foreground">Status</p>
           <p className={`text-sm font-semibold ${statusColor(order.status)}`}>
@@ -251,8 +251,8 @@ function OrderDetailContent({
       {needsPayment && (
         <div className="space-y-3">
           <div className="flex items-start gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-            <p className="text-sm font-medium text-amber-600">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary-ink" />
+            <p className="text-sm font-medium text-primary-ink">
               {order.status === "payment_failed" ? "Payment failed — try again" : "Payment required"}
             </p>
           </div>
@@ -272,7 +272,7 @@ function OrderDetailContent({
 
       {settling && (
         <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <Loader2 className="h-4 w-4 animate-spin text-primary-ink" />
           <p className="text-sm">Confirming your payment — this updates automatically.</p>
         </div>
       )}
@@ -302,7 +302,7 @@ function OrderDetailContent({
           {order.items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
+              className="flex items-center gap-3 rounded-3xl border border-border/60 bg-card shadow-sm p-3"
             >
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
                 {item.mockup_url ? (
@@ -326,16 +326,12 @@ function OrderDetailContent({
           ))}
 
           {/* Pricing summary */}
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-2">
+          <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4 space-y-2">
             {[
               { label: "Subtotal", value: `${sym}${order.pricing.subtotal}` },
               { label: "Shipping", value: `${sym}${order.pricing.shipping_cost}` },
               ...(parseFloat(order.pricing.discount) > 0
                 ? [{ label: "Discount", value: `-${sym}${order.pricing.discount}` }]
-                : []),
-              ...(parseFloat(order.pricing.tax) > 0 ? [{ label: "Tax", value: `${sym}${order.pricing.tax}` }] : []),
-              ...(parseFloat(order.pricing.platform_fee) > 0
-                ? [{ label: "Platform fee", value: `${sym}${order.pricing.platform_fee}` }]
                 : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm">
@@ -354,12 +350,12 @@ function OrderDetailContent({
       {/* Shipping */}
       {section === "shipping" && (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+          <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               {order.shipping.delivery_type === "pickup" ? (
-                <><MapPin className="h-4 w-4 text-primary" />Pickup</>
+                <><MapPin className="h-4 w-4 text-primary-ink" />Pickup</>
               ) : (
-                <><Truck className="h-4 w-4 text-primary" />Delivery</>
+                <><Truck className="h-4 w-4 text-primary-ink" />Delivery</>
               )}
             </div>
 
@@ -379,7 +375,7 @@ function OrderDetailContent({
                 {order.shipping.pickup_location.landmark && (
                   <p className="text-xs">{order.shipping.pickup_location.landmark}</p>
                 )}
-                <p className="mt-1 text-xs text-amber-600">{order.shipping.pickup_location.instructions}</p>
+                <p className="mt-1 text-xs text-primary-ink">{order.shipping.pickup_location.instructions}</p>
               </div>
             )}
 
@@ -392,7 +388,7 @@ function OrderDetailContent({
           </div>
 
           {order.customer_note && (
-            <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Your note</p>
               <p className="text-sm">{order.customer_note}</p>
             </div>
@@ -402,7 +398,7 @@ function OrderDetailContent({
 
       {/* Timeline */}
       {section === "timeline" && (
-        <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4">
           {orderSteps.map((step, i) => (
             <TimelineStep
               key={step.key}

@@ -84,7 +84,7 @@ export function CartDrawer() {
               {items.map((item) => (
                 <li
                   key={item.cart_id}
-                  className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-3"
+                  className="flex items-center gap-4 rounded-3xl border border-border/60 bg-card shadow-sm p-3"
                 >
                   {item.mockup_url ? (
                     <img

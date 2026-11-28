@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export function UserAvatar({ user, className }: { user: Pick<User, "display_name" | "photo_url">; className?: string }) {
   const [failed, setFailed] = useState(false);
   const initials = (user.display_name || "?").trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  const base = "grid shrink-0 place-items-center overflow-hidden rounded-full bg-primary/15 font-semibold text-primary";
+  const base = "grid shrink-0 place-items-center overflow-hidden rounded-full bg-primary/15 font-semibold text-primary-ink";
   return user.photo_url && !failed ? (
     <img
       src={user.photo_url}

@@ -72,13 +72,13 @@ export function StepPayment() {
         className="flex h-full flex-col"
       >
         <div className="flex-1 space-y-4 overflow-y-auto pb-6 no-scrollbar">
-          <div className="rounded-2xl border border-border bg-surface p-5 text-center">
+          <div className="rounded-3xl border border-border/60 bg-card p-6 text-center shadow-sm">
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Amount due</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight">{formatPrice(order.total, order.currency)}</p>
+            <p className="mt-1 text-4xl font-semibold tracking-tight tabular-nums">{formatPrice(order.total, order.currency)}</p>
             <p className="mt-1 text-xs text-muted-foreground">Order {order.orderNumber}</p>
           </div>
           {!paid && (
-            <Button className="h-12 w-full rounded-2xl bg-gold text-sm font-semibold text-gold-foreground" onClick={() => setSheetOpen(true)}>
+            <Button className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-glow transition active:scale-[0.98]" onClick={() => setSheetOpen(true)}>
               <CreditCard className="mr-2 h-4 w-4" /> Pay now
             </Button>
           )}
@@ -86,7 +86,7 @@ export function StepPayment() {
 
           {paid ? (
             <div className="space-y-2">
-              <Button className="h-12 w-full rounded-2xl" onClick={goOrders}>
+              <Button className="h-14 w-full rounded-full text-base font-semibold" onClick={goOrders}>
                 <CheckCircle2 className="mr-2 h-4 w-4" /> View my orders
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => { reset(); navigate({ to: "/marketplace" }); }}>

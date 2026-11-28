@@ -134,7 +134,7 @@ export function UserMenu({ anchor = "header", className, children }: UserMenuPro
                 rel="noopener noreferrer"
                 role="menuitem"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center gap-2.5 border-b border-border/40 px-4 py-2.5 text-sm text-primary transition hover:bg-surface-overlay"
+                className="flex w-full items-center gap-2.5 border-b border-border/40 px-4 py-2.5 text-sm text-primary-ink transition hover:bg-surface-overlay"
               >
                 <StoreIcon className="h-3.5 w-3.5" />
                 Start selling your designs

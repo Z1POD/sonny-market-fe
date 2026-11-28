@@ -25,7 +25,7 @@ export function RouteProgressBar() {
       aria-hidden
       className="pointer-events-none fixed inset-x-0 top-0 z-[999] h-[3px] overflow-hidden"
     >
-      <div className="route-progress-bar h-full w-1/3 bg-gradient-to-r from-emerald-500 via-emerald-700 to-emerald-800" />
+      <div className="route-progress-bar h-full w-1/3 bg-gradient-to-r from-primary via-emerald to-emerald" />
       <style>{`
         @keyframes route-progress-slide {
           0%   { transform: translateX(-100%); }

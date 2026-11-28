@@ -32,7 +32,7 @@ function statusColor(status: string) {
     case "sent_to_printer":
     case "in_production":
     case "in_transit":
-    case "handed_over": return "text-emerald-500";
+    case "handed_over": return "text-emerald";
     case "completed":
     case "delivered": return "text-blue-300";
     case "cancelled":
@@ -41,7 +41,7 @@ function statusColor(status: string) {
     case "refunded":
     case "disputed": return "text-destructive";
     case "pending_payment": return "text-muted-foreground";
-    default: return "text-amber-500";
+    default: return "text-primary-ink";
   }
 }
 
@@ -66,7 +66,7 @@ function TimelineStep({
         <div
           className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${
             done
-              ? "border-green-500 bg-green-500"
+              ? "border-emerald bg-emerald"
               : active
               ? "border-primary bg-primary/10"
               : "border-border bg-transparent"
@@ -77,7 +77,7 @@ function TimelineStep({
         </div>
         {!last && (
           <div
-            className={`mt-1 w-0.5 flex-1 min-h-6 ${done ? "bg-green-500/40" : "bg-border"}`}
+            className={`mt-1 w-0.5 flex-1 min-h-6 ${done ? "bg-emerald/40" : "bg-border"}`}
           />
         )}
       </div>
@@ -255,7 +255,7 @@ function OrderDetailContent({
   return (
     <div className="space-y-5">
       {/* Status banner */}
-      <div className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className="flex items-center justify-between rounded-3xl border border-border/60 bg-card shadow-sm px-4 py-3">
         <div>
           <p className="text-xs text-muted-foreground">Status</p>
           <p className={`text-sm font-semibold ${statusColor(order.status)}`}>
@@ -273,9 +273,9 @@ function OrderDetailContent({
       {/* Payment — same panel as checkout's payment step */}
       {needsPayment && (
         <div className="space-y-3">
-          <div className="flex items-start gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-            <p className="text-sm font-medium text-amber-600">
+          <div className="flex items-start gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary-ink" />
+            <p className="text-sm font-medium text-primary-ink">
               {order.status === "payment_failed" ? "Payment failed — try again" : "Payment required"}
             </p>
           </div>
@@ -302,7 +302,7 @@ function OrderDetailContent({
 
       {settling && (
         <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <Loader2 className="h-4 w-4 animate-spin text-primary-ink" />
           <p className="text-sm">Confirming your payment — this updates automatically.</p>
         </div>
       )}
@@ -338,7 +338,7 @@ function OrderDetailContent({
           {order.items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3"
+              className="flex items-center gap-3 rounded-3xl border border-border/60 bg-card shadow-sm p-3"
             >
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted">
                 {item.mockup_url ? (
@@ -362,7 +362,7 @@ function OrderDetailContent({
           ))}
 
           {/* Pricing summary */}
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-2">
+          <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4 space-y-2">
             {[
               { label: "Subtotal", value: `${sym}${order.pricing.subtotal}` },
               {
@@ -383,7 +383,7 @@ function OrderDetailContent({
               <span>{sym}{order.pricing.total}</span>
             </div>
             {order.pricing.delivery_fee_mode === "cod" && parseFloat(order.pricing.delivery_fee_due) > 0 && (
-              <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-600">
+              <p className="rounded-xl bg-primary/15 px-3 py-2 text-xs text-primary-ink">
                 Pay the courier {sym}{order.pricing.delivery_fee_due} in cash on delivery (not included in the total above).
               </p>
             )}
@@ -394,12 +394,12 @@ function OrderDetailContent({
       {/* Shipping */}
       {section === "shipping" && (
         <div className="space-y-3">
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+          <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
               {order.shipping.delivery_type === "pickup" ? (
-                <><MapPin className="h-4 w-4 text-primary" />Pickup</>
+                <><MapPin className="h-4 w-4 text-primary-ink" />Pickup</>
               ) : (
-                <><Truck className="h-4 w-4 text-primary" />Delivery</>
+                <><Truck className="h-4 w-4 text-primary-ink" />Delivery</>
               )}
             </div>
 
@@ -419,7 +419,7 @@ function OrderDetailContent({
                 {order.shipping.pickup_location.landmark && (
                   <p className="text-xs">{order.shipping.pickup_location.landmark}</p>
                 )}
-                <p className="mt-1 text-xs text-amber-600">{order.shipping.pickup_location.instructions}</p>
+                <p className="mt-1 text-xs text-primary-ink">{order.shipping.pickup_location.instructions}</p>
               </div>
             )}
 
@@ -432,7 +432,7 @@ function OrderDetailContent({
           </div>
 
           {order.customer_note && (
-            <div className="rounded-2xl border border-border bg-surface p-4">
+            <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Your note</p>
               <p className="text-sm">{order.customer_note}</p>
             </div>
@@ -442,7 +442,7 @@ function OrderDetailContent({
 
       {/* Timeline */}
       {section === "timeline" && (
-        <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="rounded-3xl border border-border/60 bg-card shadow-sm p-4">
           {orderSteps.map((step, i) => (
             <TimelineStep
               key={step.key}

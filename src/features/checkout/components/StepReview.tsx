@@ -192,14 +192,13 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
       <div className="flex-1 overflow-y-auto space-y-4 pb-28 px-2 no-scrollbar">
         {/* Header */}
         <div className="mb-4">
-          <h2 className="text-2xl font-semibold tracking-tight">Review your order</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Double-check everything before placing.</p>
+          <p className="text-sm text-muted-foreground">Double-check everything before placing your order.</p>
         </div>
 
 
 
         {/* Item Summary */}
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm">
 
           {primaryMockup && (
             <div className="flex items-center gap-5 border-b border-border/60 p-4">
@@ -274,7 +273,7 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
         </div>
 
         {/* Shipping Summary */}
-        <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+        <div className="space-y-3 rounded-3xl border border-border/60 bg-card shadow-sm p-4">
           <div className="flex items-center gap-2">
             {fulfillmentType === "delivery" ? (
               <Truck className="h-4 w-4 text-muted-foreground" />
@@ -321,7 +320,7 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
         </div>
 
         {/* Price Breakdown */}
-        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+        <div className="space-y-2 rounded-3xl border border-border/60 bg-card shadow-sm p-4">
           <div className="flex items-center gap-2 mb-2">
             <CreditCard className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold">Price breakdown</h3>
@@ -340,7 +339,7 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
             </div>
             {codAllowed && (
               <label className="flex cursor-pointer items-start gap-2.5 rounded-xl bg-muted/40 p-3 text-xs">
-                <input type="checkbox" checked={payCourier} onChange={(e) => setPayCourier(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--gold,currentColor)]" />
+                <input type="checkbox" checked={payCourier} onChange={(e) => setPayCourier(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--emerald)]" />
                 <span>
                   <span className="block font-medium text-foreground">Pay the courier on delivery</span>
                   <span className="text-muted-foreground">The delivery fee is not charged now; you pay it in cash when your order arrives.</span>
@@ -356,7 +355,7 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
             {quote && parseFloat(quote.discount) > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>Discount</span>
-                <span className="tabular-nums text-green-600">-{money(quote.discount)}</span>
+                <span className="tabular-nums text-emerald">-{money(quote.discount)}</span>
               </div>
             )}
             {quoteError && (
@@ -378,18 +377,18 @@ export function StepReview({ mockupUrl, mockupUrls = [], onContinue }: Props) {
         </div>
 
         {/* Security note */}
-        <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-[11px] text-green-700">
+        <div className="flex items-center gap-2 rounded-2xl bg-accent px-3.5 py-3 text-xs text-accent-foreground">
           <Shield className="h-3.5 w-3.5 flex-shrink-0" />
           <span>Pay by bank transfer or mobile money, then upload your receipt to verify.</span>
         </div>
       </div>
 
       {/* Sticky Place Order Button */}
-      <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/95 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 -mx-2 border-t border-border/60 bg-background/90 px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+0.75rem)] pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <Button
           onClick={handlePlaceOrder}
           disabled={creatingOrder || !quote}
-          className="w-full h-12 rounded-2xl text-base font-semibold"
+          className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-glow transition active:scale-[0.98]"
           size="lg"
         >
           {creatingOrder ? (

@@ -223,7 +223,7 @@ function ProductDetailContent({
     <div className="relative pb-28 md:pb-0">
         <div className="mx-auto grid max-w-7xl gap-6 px-1 md:px-4 pb:4 md:grid-cols-[1.2fr_1fr] md:gap-12 md:px-8 pt-8 md:pt-4 md:mt-12">
             {/* Fullscreen thumbnail hero — up to 85vh per spec */}
-            <div className="relative h-[75dvh] md:h-[85dvh] max-h-[900px] w-full overflow-hidden bg-surface md:mx-auto md:max-w-5xl rounded-[2.8rem] md:rounded-[2.8rem] border-transparent md:border md:border-border">
+            <div className="relative h-[85dvh] md:h-[85dvh] max-h-[900px] w-full overflow-hidden bg-surface md:mx-auto md:max-w-5xl rounded-[2.8rem] md:rounded-[2.8rem] border-transparent md:border md:border-border">
                 {is3D && product.viewer3d ? (
                     <div className="relative h-full w-full">
                         <ProductViewer3D
@@ -520,7 +520,7 @@ function ProductDetailsTable({ product }: { product: ProductDetail }) {
     <section className="mx-auto mt-8 px-2 max-w-2xl border-t border-border pt-8">
       <p className="mb-4 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Details</p>
       {rows.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface/40">
+        <div className="rounded-3xl border border-border/60 bg-card shadow-sm/40">
           <Table>
             <TableBody>
               {rows.map((row) => (
@@ -586,7 +586,7 @@ function PersonalizeMenu({ onPersonalize }: { onPersonalize: () => void }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-12 w-60 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-xl"
+          className="absolute right-0 top-12 w-60 overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm p-1.5 shadow-xl"
         >
           <button
             role="menuitem"

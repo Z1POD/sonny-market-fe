@@ -441,7 +441,7 @@ export function MarketplacePage() {
                   haptics.impactOccurred("light");
                   navigate({ to: "/marketplace", search: { store: s.slug } });
                 }}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-5 text-left transition-all hover:border-gold"
+                className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card shadow-sm p-5 text-left transition-all hover:border-gold"
               >
                 {s.banner_url && (
                   <img

@@ -264,7 +264,7 @@ export function StepShipping({ onContinue }: Props) {
                 clearFieldError("fullName");
             }}
             placeholder="Full name"
-            className={`h-12 rounded-xl border-border bg-surface ${
+            className={`h-12 rounded-2xl border-border bg-card ${
                 shippingAddress.fullName &&
                 !nameValidation.valid
                 ? "border-destructive"
@@ -304,8 +304,8 @@ export function StepShipping({ onContinue }: Props) {
                   }}
                   className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                     shippingAddress.cityId === city.id
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-surface text-foreground hover:border-foreground/40"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-surface text-foreground hover:border-primary/50"
                   }`}
                 >
                   {city.name}
@@ -344,7 +344,7 @@ export function StepShipping({ onContinue }: Props) {
                   }}
                   className={`flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all ${
                     fulfillmentType === type
-                      ? "bg-foreground text-background"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -372,8 +372,8 @@ export function StepShipping({ onContinue }: Props) {
                       }}
                       className={`flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all ${
                         selectedVendorCode === opt.vendorCode
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-surface hover:border-foreground/30"
+                          ? "border-primary bg-primary/10 ring-1 ring-primary"
+                          : "border-border/60 bg-card hover:border-primary/50"
                       }`}
                     >
                       <div>
@@ -414,7 +414,7 @@ export function StepShipping({ onContinue }: Props) {
                             clearFieldError("phone");
                         }}
                         placeholder="+251911234567"
-                        className={`h-12 rounded-xl border-border bg-surface ${
+                        className={`h-12 rounded-2xl border-border bg-card ${
                             shippingAddress.phone &&
                             !phoneValidation.valid
                             ? "border-destructive"
@@ -432,7 +432,7 @@ export function StepShipping({ onContinue }: Props) {
 
                         {shippingAddress.phone.length > 0 &&
                         phoneValidation.valid && (
-                            <p className="flex items-center gap-1 text-[11px] text-green-600">
+                            <p className="flex items-center gap-1 text-[11px] text-emerald">
                             <Check className="h-3 w-3" />
                             Phone number
                             </p>
@@ -454,7 +454,7 @@ export function StepShipping({ onContinue }: Props) {
                             clearFieldError("street");
                         }}
                         placeholder="Bole Road, House 123"
-                        className={`h-12 rounded-xl border-border bg-surface ${
+                        className={`h-12 rounded-2xl border-border bg-card ${
                             shippingAddress.street &&
                             !streetValidation.valid
                             ? "border-destructive"
@@ -492,8 +492,8 @@ export function StepShipping({ onContinue }: Props) {
                       }}
                       className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition-all ${
                         selectedPickupId === loc.locationId
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-surface hover:border-foreground/30"
+                          ? "border-primary bg-primary/10 ring-1 ring-primary"
+                          : "border-border/60 bg-card hover:border-primary/50"
                       }`}
                     >
                       <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
@@ -529,18 +529,18 @@ export function StepShipping({ onContinue }: Props) {
             value={shippingAddress.deliveryInstructions ?? ""}
             onChange={(e) => setShippingAddress({ deliveryInstructions: e.target.value })}
             placeholder="Any special instructions…"
-            className="h-12 rounded-xl border-border bg-surface"
+            className="h-12 rounded-2xl border-border bg-card"
           />
         </div>
 
       </div>
 
       {/* Sticky Continue Button */}
-      <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/95 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 -mx-2 border-t border-border/60 bg-background/90 px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+0.75rem)] pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <Button
           onClick={handleContinue}
           disabled={!canContinue}
-          className="w-full h-12 rounded-2xl text-base font-semibold"
+          className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-glow transition active:scale-[0.98]"
           size="lg"
         >
           Continue

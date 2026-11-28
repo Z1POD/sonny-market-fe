@@ -89,8 +89,8 @@ export function PaymentVerifyingOverlay({
           <span
             className={cn(
               "grid h-24 w-24 place-items-center rounded-full",
-              result.kind === "verified" && "bg-emerald-500/10 text-emerald-500",
-              result.kind === "pending_review" && "bg-amber-500/10 text-amber-500",
+              result.kind === "verified" && "bg-emerald/10 text-emerald",
+              result.kind === "pending_review" && "bg-primary/15 text-primary-ink",
               result.kind === "failed" && "bg-destructive/10 text-destructive",
             )}
           >
@@ -145,12 +145,12 @@ export function PaymentVerifyingOverlay({
           <p className="mt-1.5 text-sm text-muted-foreground">{detail}</p>
         </div>
         {steps && steps.length > 0 && (
-          <ul className="w-full space-y-2 rounded-2xl border border-border bg-surface/80 p-4 text-left">
+          <ul className="w-full space-y-2 rounded-3xl border border-border/60 bg-card shadow-sm/80 p-4 text-left">
             {steps.map((s) => (
               <li key={s.label} className={cn("flex items-center gap-2.5 text-sm", s.state === "todo" ? "text-muted-foreground/60" : "text-foreground")}>
                 <span className="grid h-5 w-5 shrink-0 place-items-center">
                   {s.state === "done" ? (
-                    <Check className="h-4 w-4 text-emerald-500" />
+                    <Check className="h-4 w-4 text-emerald" />
                   ) : s.state === "active" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (

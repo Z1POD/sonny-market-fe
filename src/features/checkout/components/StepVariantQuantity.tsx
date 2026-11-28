@@ -101,9 +101,9 @@ export function StepVariantQuantity({ variants, onContinue }: Props) {
                   disabled={!hasStock}
                   className={`group relative flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium transition-all ${
                     isSelected
-                      ? "border-foreground bg-foreground text-background"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : hasStock
-                        ? "border-border bg-surface text-foreground hover:border-foreground/40"
+                        ? "border-border bg-surface text-foreground hover:border-primary/50"
                         : "border-border/30 bg-surface/50 text-muted-foreground/40 cursor-not-allowed"
                   }`}
                 >
@@ -147,9 +147,9 @@ export function StepVariantQuantity({ variants, onContinue }: Props) {
                   disabled={!available}
                   className={`relative flex h-11 min-w-[3rem] items-center justify-center rounded-xl border text-sm font-medium transition-all ${
                     isSelected
-                      ? "border-foreground bg-foreground text-background"
+                      ? "border-primary bg-primary text-primary-foreground"
                       : available
-                        ? "border-border bg-surface text-foreground hover:border-foreground/40"
+                        ? "border-border bg-surface text-foreground hover:border-primary/50"
                         : "border-border/30 bg-surface/50 text-muted-foreground/40 cursor-not-allowed"
                   }`}
                 >
@@ -196,7 +196,7 @@ export function StepVariantQuantity({ variants, onContinue }: Props) {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
-                      className="flex items-center justify-between rounded-2xl border border-border bg-surface p-3"
+                      className="flex items-center justify-between rounded-3xl border border-border/60 bg-card shadow-sm p-3"
                     >
                       <div className="flex items-center gap-3">
                         <span
@@ -244,7 +244,7 @@ export function StepVariantQuantity({ variants, onContinue }: Props) {
       </div>
 
       {/* Sticky Continue Button */}
-      <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/95 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 -mx-2 border-t border-border/60 bg-background/90 px-4 pb-[calc(max(env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))+0.75rem)] pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-muted-foreground">{totalQty} item{totalQty !== 1 ? "s" : ""}</span>
           <span className="text-sm font-semibold">
@@ -254,7 +254,7 @@ export function StepVariantQuantity({ variants, onContinue }: Props) {
         <Button
           onClick={onContinue}
           disabled={!canContinue}
-          className="w-full h-12 rounded-2xl text-base font-semibold"
+          className="h-14 w-full rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-glow transition active:scale-[0.98]"
           size="lg"
         >
           Continue
