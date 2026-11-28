@@ -111,11 +111,13 @@ function handleTexture(kind: HandleKind): THREE.CanvasTexture {
   g.lineCap = "round";
   g.lineJoin = "round";
   g.strokeStyle = kind === "delete" ? "#ffffff" : fg;
+  // Same glyphs as the Adjust board: lucide RotateCw, and Maximize2 turned 90° so it points along the corner diagonal.
+  if (kind === "scale") { g.translate(12, 12); g.rotate(Math.PI / 2); g.translate(-12, -12); }
   const paths = kind === "rotate"
-    ? ["M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 12", "M21 3v9h-9"]
+    ? ["M21 12a9 9 0 1 1-9-9c2.25 0 4.5.9 6.74 2.74L21 8", "M21 3v5h-5"]
     : kind === "delete"
       ? ["M18 6 6 18", "m6 6 12 12"]
-      : ["M15 3h6v6", "M9 21H3v-6", "M21 3 3 21", "M3 3l18 18"];
+      : ["M15 3h6v6", "M9 21H3v-6", "m21 3-7 7", "m3 21 7-7"];
   for (const d of paths) g.stroke(new Path2D(d));
   g.restore();
   const t = new THREE.CanvasTexture(c);

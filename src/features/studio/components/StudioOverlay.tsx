@@ -42,7 +42,6 @@ export function StudioOverlay({ tone = "busy", title, detail, steps, onRetry, re
           <p className={cn("font-semibold text-foreground", tone === "error" ? "text-base" : "text-sm")}>{title}</p>
           {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
         </div>
-        {tone === "busy" && steps && steps.length > 0 && <SaveProgress steps={steps} />}
         {steps && steps.length > 0 && (
           <ul className="mt-1 w-full space-y-1.5 text-left">
             {steps.map((s) => (
@@ -55,6 +54,7 @@ export function StudioOverlay({ tone = "busy", title, detail, steps, onRetry, re
             ))}
           </ul>
         )}
+        {tone === "busy" && steps && steps.length > 0 && <SaveProgress steps={steps} />}
         {tone === "error" && (onRetry || onSecondary) && (
           <div className="mt-2 flex gap-2">
             {onSecondary && (
@@ -80,7 +80,7 @@ function SaveProgress({ steps }: { steps: OverlayStep[] }) {
   const active = steps.some((s) => s.state === "active") ? 0.5 : 0;
   const pct = Math.min(100, Math.round(((done + active) / steps.length) * 100));
   return (
-    <div className="mt-1 w-full">
+    <div className="mt-2 w-full">
       <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out" style={{ width: `${Math.max(pct, 4)}%` }} />
       </div>

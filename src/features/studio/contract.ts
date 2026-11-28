@@ -354,6 +354,17 @@ export function mapLayer(raw: RawLayer, fonts: FontOption[]): Layer {
   } satisfies ImageLayer;
 }
 
+/** Model units per centimetre of real print size (matches the reference garments: 30 cm ≈ 0.24 units). */
+export const UNITS_PER_CM = 0.008;
+
+/** Decal boundaries follow the real print area (cm) the backend sends; `size` is only the fallback. */
+function zoneSize(z: RawPrintZone): [number, number] {
+  const cm = z.print_area_cm;
+  if (z.kind === "wrap" || !Array.isArray(cm)) return z.size;
+  const [w, h] = cm.map(Number);
+  return w > 0 && h > 0 ? [w * UNITS_PER_CM, h * UNITS_PER_CM] : z.size;
+}
+
 export function mapZone(z: RawPrintZone): PrintZone {
   return {
     // The save body and layers address a zone by its id (the printable area's UUID); `code` is only a readable hint.
@@ -365,7 +376,7 @@ export function mapZone(z: RawPrintZone): PrintZone {
     ...(z.projection_depth != null ? { projectionDepth: z.projection_depth } : {}),
     position: z.position,
     rotation: z.rotation,
-    size: z.size,
+    size: zoneSize(z),
     printAreaCm: z.print_area_cm,
     cameraPosition: z.camera_position,
     allowedMethods: z.allowed_method_ids ?? [],
