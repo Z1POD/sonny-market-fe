@@ -6,6 +6,10 @@ import { useCheckoutStore } from "@/features/checkout/store";
 import type { ReactNode } from "react";
 import { useTelegram } from "@/shared/hooks/use-telegram";
 import { cn } from "@/lib/utils";
+import { safeBack } from "@/shared/lib/navigation";
+import { useSwipeNavigation } from "@/shared/hooks/use-swipe-navigation";
+import { useCart } from "@/features/market/store";
+import { useSearchSheet } from "@/features/market/searchStore";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
 import { CartDrawer } from "@/features/market/components/CartDrawer";
@@ -59,12 +63,22 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const handleBack = useCallback(() => {
     if (isPaymentBlocked()) return; // a payment request is in flight
+    // Back closes an open drawer / search sheet before it leaves the page.
+    if (useCart.getState().drawerOpen) { useCart.setState({ drawerOpen: false }); return; }
+    if (useSearchSheet.getState().open) { useSearchSheet.getState().setOpen(false); return; }
     // The studio asks before discarding unsaved work.
     if (isStudio) window.dispatchEvent(new Event("studio:request-back"));
     else if (isCheckoutPage) window.dispatchEvent(new Event("checkout:request-back"));
-    else if (router.history.canGoBack()) router.history.back();
-    else navigate({ to: isOrderPage ? "/orders" : "/marketplace" }); // opened from a notification / deep link
-  }, [router, navigate, isStudio, isCheckoutPage, isOrderPage]);
+    else safeBack(router, isOrderPage ? "/orders" : "/marketplace"); // fallback: opened from a notification / deep link
+  }, [router, isStudio, isCheckoutPage, isOrderPage]);
+
+  useSwipeNavigation({
+    enabled: !isStudio,
+    tabs: ["/marketplace", "/profile"],
+    pathname: location.pathname,
+    go: (to) => void navigate({ to }),
+    back: handleBack,
+  });
 
   useEffect(() => {
     if (!tg?.BackButton) return;
